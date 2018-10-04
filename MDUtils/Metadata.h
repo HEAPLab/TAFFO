@@ -36,6 +36,9 @@
 #define UNROLL_COUNT_METADATA  "taffo.unroll"
 #define START_FUN_METADATA     "taffo.start"
 #define TARGET_METADATA        "taffo.target"
+#define ORIGINAL_FUN_METADATA  "taffo.originalCall"
+#define CLONED_FUN_METADATA    "taffo.equivalentChild"
+#define SOURCE_FUN_METADATA    "taffo.sourceFunction"
 
 namespace mdutils {
 
