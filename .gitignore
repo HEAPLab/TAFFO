@@ -19,3 +19,4 @@ test/axbench/kmeans/correct_output
 test/axbench/kmeans/src_before
 test/axbench/fft/orig_src
 test/axbench/blackscholes/orig_src
+build2
