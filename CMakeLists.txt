@@ -6,6 +6,6 @@ add_subdirectory(Autotuner)
 add_subdirectory(Conversion)
 add_subdirectory(ErrorAnalysis)
 add_subdirectory(Initializer)
-# add_subdirectory(RangeAnalysis)
+add_subdirectory(RangeAnalysis)
 
 add_subdirectory(MDUtils)
