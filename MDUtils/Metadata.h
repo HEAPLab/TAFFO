@@ -50,9 +50,7 @@ using namespace llvm;
 /// The returned pointers have the same lifetime as the MetadataManager instance.
 class MetadataManager {
 public:
-  static MetadataManager& getMetadataManager() {
-    return Instance;
-  }
+  static MetadataManager& getMetadataManager();
 
   /// Get the Input Info (Type, Range, Initial Error) attached to I.
   InputInfo* retrieveInputInfo(const Instruction &I);

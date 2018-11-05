@@ -16,7 +16,10 @@
 
 namespace mdutils {
 
-MetadataManager MetadataManager::Instance;
+MetadataManager& MetadataManager::getMetadataManager() {
+  static MetadataManager Instance;
+  return Instance;
+}
 
 InputInfo* MetadataManager::retrieveInputInfo(const Instruction &I) {
   return retrieveInputInfo(I.getMetadata(INPUT_INFO_METADATA));
