@@ -95,8 +95,13 @@ public:
   static void
   setLoopUnrollCountMetadata(Loop &L, unsigned UnrollCount);
 
+  /// Attach loop unroll metadata to Function F.
+  /// Loop unroll counts must be provided in Loop preorder.
+  static void
+  setLoopUnrollCountMetadata(Function &F, const SmallVectorImpl<Optional<unsigned> > &LUCs);
+
   /// Read loop unroll count from metadata attached to the header of L.
-  static Optional<unsigned> retrieveLoopUnrollCount(const Loop &L);
+  static Optional<unsigned> retrieveLoopUnrollCount(const Loop &L, LoopInfo *LI = nullptr);
 
   /// Attach metadata containing the computed error to the given instruction.
   static void setErrorMetadata(Instruction &I, double Error);
@@ -138,6 +143,11 @@ protected:
   InputInfo *retrieveInputInfo(MDNode *MDN);
 
   std::unique_ptr<InputInfo> createInputInfoFromMetadata(MDNode *MDN);
+
+  static Optional<unsigned> retrieveLUCFromHeaderMD(const Loop &L);
+  static Optional<unsigned> retrieveLUCFromFunctionMD(const Loop &L, LoopInfo &LI);
+  static unsigned getLoopIndex(const Loop &L, LoopInfo &LI);
+  static SmallVector<Optional<unsigned>, 4U> retrieveLUCListFromFunctionMD(Function &F);
 
 private:
   static MetadataManager Instance;

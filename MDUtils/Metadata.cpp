@@ -14,6 +14,8 @@
 
 #include "Metadata.h"
 
+#include <sstream>
+
 namespace mdutils {
 
 MetadataManager& MetadataManager::getMetadataManager() {
@@ -96,7 +98,7 @@ setLoopUnrollCountMetadata(Loop &L, unsigned UnrollCount) {
   assert(Header && "Loop with no header.");
 
   TerminatorInst *HTI = Header->getTerminator();
-  assert(HTI && "Block with no terminator");
+  assert(HTI && "Block with no terminator.");
 
   // Prepare MD Node
   ConstantInt *CIUC = ConstantInt::get(Type::getInt32Ty(HTI->getContext()),
@@ -108,14 +110,40 @@ setLoopUnrollCountMetadata(Loop &L, unsigned UnrollCount) {
   HTI->setMetadata(UNROLL_COUNT_METADATA, UCNode);
 }
 
+void MetadataManager::
+setLoopUnrollCountMetadata(Function &F,
+			   const SmallVectorImpl<Optional<unsigned> > &LUCs) {
+  std::ostringstream EncLUCs;
+  for (const Optional<unsigned> &LUC : LUCs) {
+    if (LUC.hasValue())
+      EncLUCs << LUC.getValue() << " ";
+    else
+      EncLUCs << "U ";
+  }
+
+  F.setMetadata(UNROLL_COUNT_METADATA,
+		MDNode::get(F.getContext(),
+			    MDString::get(F.getContext(), EncLUCs.str())));
+}
+
 Optional<unsigned>
-MetadataManager::retrieveLoopUnrollCount(const Loop &L) {
+MetadataManager::retrieveLoopUnrollCount(const Loop &L, LoopInfo *LI) {
+  Optional<unsigned> MDLUC = retrieveLUCFromHeaderMD(L);
+
+  if (!MDLUC.hasValue() && LI)
+    return retrieveLUCFromFunctionMD(L, *LI);
+
+  return MDLUC;
+}
+
+Optional<unsigned>
+MetadataManager::retrieveLUCFromHeaderMD(const Loop &L) {
   // Get Loop header terminating instruction
   BasicBlock *Header = L.getHeader();
   assert(Header && "Loop with no header.");
 
   TerminatorInst *HTI = Header->getTerminator();
-  assert(HTI && "Block with no terminator");
+  assert(HTI && "Block with no terminator.");
 
   MDNode *UCNode = HTI->getMetadata(UNROLL_COUNT_METADATA);
   if (UCNode == nullptr)
@@ -125,6 +153,61 @@ MetadataManager::retrieveLoopUnrollCount(const Loop &L) {
   ConstantAsMetadata *CMUC = cast<ConstantAsMetadata>(UCNode->getOperand(0U));
   ConstantInt *CIUC = cast<ConstantInt>(CMUC->getValue());
   return CIUC->getZExtValue();
+}
+
+Optional<unsigned>
+MetadataManager::retrieveLUCFromFunctionMD(const Loop &L, LoopInfo &LI) {
+  unsigned LIdx = getLoopIndex(L, LI);
+
+  Function *F = L.getHeader()->getParent();
+  assert(F);
+  SmallVector<Optional<unsigned>, 4U> LUCs = retrieveLUCListFromFunctionMD(*F);
+
+  if (LIdx >= LUCs.size())
+    return NoneType();
+
+  return LUCs[LIdx];
+}
+
+unsigned
+MetadataManager::getLoopIndex(const Loop &L, LoopInfo &LI) {
+  unsigned LIdx = 0;
+  for (const Loop *CLoop : LI.getLoopsInPreorder()) {
+    if (&L == CLoop)
+      return LIdx;
+    else
+      ++LIdx;
+  }
+  llvm_unreachable("User-provided loop not found in LoopInfo.");
+}
+
+SmallVector<Optional<unsigned>, 4U>
+MetadataManager::retrieveLUCListFromFunctionMD(Function &F) {
+  SmallVector<Optional<unsigned>, 4U> LUCList;
+
+  MDNode *LUCListMDN = F.getMetadata(UNROLL_COUNT_METADATA);
+  if (!LUCListMDN)
+    return LUCList;
+
+  MDString *LUCListMDS = dyn_cast<MDString>(LUCListMDN->getOperand(0U).get());
+  if (!LUCListMDS)
+    return LUCList;
+
+  SmallVector<StringRef, 4U> LUCSRefs;
+  LUCListMDS->getString().split(LUCSRefs, ' ', -1, false);
+  for (const StringRef &LUCSR : LUCSRefs) {
+    errs() << LUCSR;
+    unsigned LUC;
+    if (!LUCSR.getAsInteger(10U, LUC)) {
+      LUCList.push_back(LUC);
+      errs() << " done\n";
+    }
+    else {
+      LUCList.push_back(NoneType());
+      errs() << " nope\n";
+    }
+  }
+  return LUCList;
 }
 
 void MetadataManager::setErrorMetadata(Instruction &I, double Error) {
