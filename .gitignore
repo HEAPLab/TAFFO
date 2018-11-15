@@ -1,6 +1,5 @@
-build
+build*
 .idea
-build2
 
 test/axbench/*/obj/
 test/axbench/*/bin/
