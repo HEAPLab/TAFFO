@@ -1,5 +1,6 @@
 build
 .idea
+build2
 
 test/axbench/*/obj/
 test/axbench/*/bin/
@@ -19,4 +20,14 @@ test/axbench/kmeans/correct_output
 test/axbench/kmeans/src_before
 test/axbench/fft/orig_src
 test/axbench/blackscholes/orig_src
-build2
+
+test/polybench-c-4.2.1-beta/raw-times
+test/polybench-c-4.2.1-beta/raw-times-*
+test/polybench-c-4.2.1-beta/multiconf_results
+test/polybench-c-4.2.1-beta/*.log
+test/polybench-c-4.2.1-beta/*_multiconf_results
+test/polybench-c-4.2.1-beta/output-data-32
+test/polybench-c-4.2.1-beta/output-data-64
+test/polybench-c-4.2.1-beta/stats
+build.log
+*.zip
