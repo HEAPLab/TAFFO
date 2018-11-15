@@ -30,3 +30,4 @@ test/polybench-c-4.2.1-beta/output-data-64
 test/polybench-c-4.2.1-beta/stats
 build.log
 *.zip
+dist
