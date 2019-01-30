@@ -56,7 +56,7 @@ The ``initialError`` subnode, if present, specifies a priori an error value for 
 
 An input information metadata can be associated to either an Instruction, the parameters of a function, or to a GlobalObject. 
 
-#### Input Information on Instructions and GlobalObjects
+#### Input Information on Non-Struct Instructions and GlobalObjects
 
 The input information is attached to the instruction using the ``taffo.info`` metadata label.
 
@@ -104,6 +104,7 @@ It contains the following public fields:
 All of these fields are optional: if they are assigned the value `nullptr`, the TAFFO `MetadataManager` will emit `i1 false` for them.
 
 **Example:**
+
 ```cpp
 ...
 FPType Ty(32U, 18U, false);
@@ -112,6 +113,7 @@ double Err = 1.0e-8;
 InputInfo II(&Ty, &R, &Err);
 MetadataManager::setInputInfoMetadata(Instr, II);
 ```
+
 The piece of code above associates the range [1.0, 100] and the initial error 10^-8 to instruction Instr,
 which will be treated as an unsigned fixed point value with 18 fractionary bits and 12 integer bits (for a total width of 32 bits).
 
@@ -120,11 +122,38 @@ Conversely, it keeps ownership of the pointers returned by the `MetadataManager:
 The objects referred to by such pointers are cached into the `MetadataManager` instance that can be retrieved with the `static MetadataManager& getMetadataManager()` function,
 so that if multiple variables have the same range, type or initial error, a pointer to the same object is returned.
 
+#### Input Information of Struct-Typed Instructions and GlobalObjects
+
+In the case of structure (record) values, the input information metadata is associated to the elements of the structure. Each input information metadata is collected, in the same order of the struct members, as a metadata tuple tagged to the value as `!taffo.structinfo`.
+
+Structure elements which shall not have input information metadata are associated to the `i1 0` metadata constant instead.
+
+**Example:**
+
+```
+%struct.spell = type { float, i32 }
+...
+%spell.addr = alloca %struct.spell*, align 8 !0
+```
+
+And, at the end of the file,
+
+```
+!0 = !{!1, i1 0}
+!1 = !{!2, !3, !4}
+!2 = !{!"fixp", i32 32, i32 5}
+!3 = !{double 2.0e+01, double 1.0e+2}
+!4 = !{double 1.000000e-02}
+```
+
+In this case, the i32 element of the structure does not have input information, while the float element does and is stored in the `!1` node.
+
+
 #### Input Information of Function Arguments
 
 The input information metadata for all the arguments is collected, in the same order of the arguments, as a metadata tuple, which is then tagged to the function as `!taffo.funinfo`.
 
-Example:
+**Example:**
 
 ```
 define i32 @slarti(i64 %x, i64 %y, i32 %n) #0 !taffo.funinfo !2 {
@@ -152,13 +181,14 @@ at the end of the file:
 !11 = !{double 0.000000e+01}
 ```
 
-Related functions:
+**Related functions:**
 
 ```cpp
 #include "ErrorPropagator/MDUtils/Metadata.h"
 void MetadataManager::retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<InputInfo *> &ResII);
 static void MetadataManager::setArgumentInputInfoMetadata(Function &F, const ArrayRef<InputInfo *> AInfo);
 ```
+
 The `InputInfo` instances for these functions can be created in the same way as for Instructions and Global Variables.
 The `MetadataManager::setArgumentInputInfoMetadata` function expects an array of pointers to `InputInfo` instances, one for each formal parameter, and in the same order.
 The `MetadataManager::retrieveArgumentInputInfo` function populates vector `ResII` with pointers to an `InputInfo` object for each argument.
