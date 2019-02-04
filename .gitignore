@@ -31,3 +31,6 @@ test/polybench-c-4.2.1-beta/stats
 build.log
 *.zip
 dist
+*.magiclangtmp.ll
+*.magiclangtmp.s
+.vscode
