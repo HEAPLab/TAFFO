@@ -34,3 +34,4 @@ dist
 *.magiclangtmp.ll
 *.magiclangtmp.s
 .vscode
+*.out
