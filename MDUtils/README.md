@@ -127,13 +127,14 @@ so that if multiple variables have the same range, type or initial error, a poin
 In the case of structure (record) values, the input information metadata is associated to the elements of the structure. Each input information metadata is collected, in the same order of the struct members, as a metadata tuple tagged to the value as `!taffo.structinfo`.
 
 Structure elements which shall not have input information metadata are associated to the `i1 0` metadata constant instead.
+In case of nested structures, fields that have a structure type are associated to another metadata tuple containing field-ordered data, forming a recursive structure.
 
 **Example:**
 
 ```
 %struct.spell = type { float, i32 }
 ...
-%spell.addr = alloca %struct.spell*, align 8 !0
+%spell.addr = alloca %struct.spell*, align 8, !taffo.structinfo !0
 ```
 
 And, at the end of the file,
