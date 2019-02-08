@@ -69,6 +69,22 @@ setArgumentInputInfoMetadata(Function &F, const ArrayRef<InputInfo *> AInfo) {
   F.setMetadata(FUNCTION_ARGS_METADATA, MDNode::get(Context, AllArgsMD));
 }
 
+StructInfo* MetadataManager::retrieveStructInfo(const Instruction &I) {
+  return retrieveStructInfo(I.getMetadata(STRUCT_INFO_METADATA));
+}
+
+StructInfo* MetadataManager::retrieveStructInfo(const GlobalObject &V) {
+  return retrieveStructInfo(V.getMetadata(STRUCT_INFO_METADATA));
+}
+
+void MetadataManager::setStructInfoMetadata(Instruction &I, const StructInfo &SInfo) {
+  I.setMetadata(STRUCT_INFO_METADATA, SInfo.toMetadata(I.getContext()));
+}
+
+void MetadataManager::setStructInfoMetadata(GlobalObject &V, const StructInfo &SInfo) {
+  V.setMetadata(STRUCT_INFO_METADATA, SInfo.toMetadata(V.getContext()));
+}
+
 void MetadataManager::
 setMaxRecursionCountMetadata(Function &F, unsigned MaxRecursionCount) {
   ConstantInt *CIRC = ConstantInt::get(Type::getInt32Ty(F.getContext()),
@@ -329,20 +345,19 @@ InputInfo *MetadataManager::retrieveInputInfo(MDNode *MDN) {
   return RetIInfo;
 }
 
-namespace {
+StructInfo *MetadataManager::retrieveStructInfo(MDNode *MDN) {
+  if (MDN == nullptr)
+    return nullptr;
 
-bool isNullInputInfoField(Metadata *MD) {
-  ConstantAsMetadata *CMD = dyn_cast<ConstantAsMetadata>(MD);
-  if (CMD == nullptr)
-    return false;
+  auto CachedStructInfo = StructInfos.find(MDN);
+  if (CachedStructInfo != StructInfos.end())
+    return cast<StructInfo>(CachedStructInfo->second.get());
 
-  ConstantInt *CI = dyn_cast<ConstantInt>(CMD->getValue());
-  if (CI == nullptr)
-    return false;
+  std::unique_ptr<StructInfo> NSInfo = createStructInfoFromMetadata(MDN);
+  StructInfo *RetSInfo = NSInfo.get();
 
-  return CI->isZero() && CI->getBitWidth() == 1U;
-}
-
+  StructInfos.insert(std::make_pair(MDN, std::move(NSInfo)));
+  return RetSInfo;
 }
 
 std::unique_ptr<InputInfo> MetadataManager::
@@ -351,19 +366,44 @@ createInputInfoFromMetadata(MDNode *MDN) {
   assert(MDN->getNumOperands() == 3U && "Must have Type, Range, Initial Error.");
 
   Metadata *ITypeMDN = MDN->getOperand(0U).get();
-  TType *IType = (isNullInputInfoField(ITypeMDN))
+  TType *IType = (IsNullInputInfoField(ITypeMDN))
     ? nullptr : retrieveTType(cast<MDNode>(ITypeMDN));
 
   Metadata *IRangeMDN = MDN->getOperand(1U).get();
-  Range *IRange = (isNullInputInfoField(IRangeMDN))
+  Range *IRange = (IsNullInputInfoField(IRangeMDN))
     ? nullptr : retrieveRange(cast<MDNode>(IRangeMDN));
 
   Metadata *IErrorMDN = MDN->getOperand(2U).get();
-  double *IError = (isNullInputInfoField(IErrorMDN))
+  double *IError = (IsNullInputInfoField(IErrorMDN))
     ? nullptr : retrieveError(cast<MDNode>(IErrorMDN));
 
   return std::unique_ptr<InputInfo>(new InputInfo(IType, IRange, IError));
 }
 
+std::unique_ptr<StructInfo> MetadataManager::
+createStructInfoFromMetadata(MDNode *MDN) {
+  assert(MDN != nullptr);
+
+  SmallVector<MDInfo *, 4U> Fields;
+  Fields.reserve(MDN->getNumOperands());
+  for (const MDOperand &MDO : MDN->operands()) {
+    Metadata *MDField = MDO.get();
+    assert(MDField != nullptr);
+    if (IsNullInputInfoField(MDField)) {
+      Fields.push_back(nullptr);
+    }
+    else if (InputInfo::isInputInfoMetadata(MDField)) {
+      Fields.push_back(retrieveInputInfo(cast<MDNode>(MDField)));
+    }
+    else if (MDNode *MDNField = dyn_cast<MDNode>(MDField)) {
+      Fields.push_back(retrieveStructInfo(MDNField));
+    }
+    else {
+      llvm_unreachable("Malformed structinfo Metadata.");
+    }
+  }
+
+  return std::unique_ptr<StructInfo>(new StructInfo(Fields));
+}
 
 }

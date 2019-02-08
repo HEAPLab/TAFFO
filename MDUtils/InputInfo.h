@@ -44,6 +44,7 @@ public:
   virtual ~TType() = default;
 
   static std::unique_ptr<TType> createFromMetadata(MDNode *MDN);
+  static bool isTTypeMetadata(Metadata *MD);
 
   TTypeKind getKind() const { return Kind; }
 private:
@@ -89,25 +90,78 @@ public:
 
   MDNode *toMetadata(LLVMContext &C) const;
   static std::unique_ptr<Range> createFromMetadata(MDNode *MDN);
+  static bool isRangeMetadata(Metadata *MD);
 };
 
 std::unique_ptr<double> CreateInitialErrorFromMetadata(MDNode *MDN);
 MDNode *InitialErrorToMetadata(double Error);
+bool IsInitialErrorMetadata(Metadata *MD);
+
+class MDInfo {
+public:
+  enum MDInfoKind { K_Struct, K_Field };
+
+  MDInfo(MDInfoKind K) : Kind(K) {}
+
+  virtual MDNode *toMetadata(LLVMContext &C) const = 0;
+
+  virtual ~MDInfo() = default;
+  MDInfoKind getKind() const { return Kind; }
+
+private:
+  const MDInfoKind Kind;
+};
 
 /// Structure containing pointers to Type, Range, and initial Error
 /// of an LLVM Value.
-struct InputInfo {
+struct InputInfo : public MDInfo {
   TType *IType;
   Range *IRange;
   double *IError;
 
   InputInfo()
-    : IType(nullptr), IRange(nullptr), IError(nullptr) {}
+    : MDInfo(K_Field), IType(nullptr), IRange(nullptr), IError(nullptr) {}
 
   InputInfo(TType *T, Range *R, double *Error)
-    : IType(T), IRange(R), IError(Error) {}
+    : MDInfo(K_Field), IType(T), IRange(R), IError(Error) {}
 
-  MDNode *toMetadata(LLVMContext &C) const;
+  MDNode *toMetadata(LLVMContext &C) const override;
+  static bool isInputInfoMetadata(Metadata *MD);
+
+  InputInfo &operator=(const InputInfo &O) {
+    assert(this->getKind() == O.getKind());
+    this->IType = O.IType;
+    this->IRange = O.IRange;
+    this->IError = O.IError;
+    return *this;
+  }
+
+  static bool classof(const MDInfo *M) { return M->getKind() == K_Field; }
+};
+
+class StructInfo : public MDInfo {
+private:
+  typedef llvm::SmallVector<MDInfo *, 4U> FieldsType;
+  FieldsType Fields;
+
+public:
+  typedef FieldsType::iterator iterator;
+  typedef FieldsType::const_iterator const_iterator;
+  typedef FieldsType::size_type size_type;
+
+  StructInfo(const ArrayRef<MDInfo *> SInfos)
+    : MDInfo(K_Struct), Fields(SInfos.begin(), SInfos.end()) {}
+
+  iterator begin() { return Fields.begin(); }
+  iterator end() { return Fields.end(); }
+  const_iterator begin() const { return Fields.begin(); }
+  const_iterator end() const { return Fields.end(); }
+  size_type size() const { return Fields.size(); }
+  MDInfo *getField(size_type I) const { return Fields[I]; }
+
+  MDNode *toMetadata(LLVMContext &C) const override;
+
+  static bool classof(const MDInfo *M) { return M->getKind() == K_Struct; }
 };
 
 
@@ -124,6 +178,9 @@ public:
 
   static std::unique_ptr<CmpErrorInfo> createFromMetadata(MDNode *MDN);
 };
+
+
+bool IsNullInputInfoField(Metadata *MD);
 
 MDNode *createDoubleMDNode(LLVMContext &C, double Value);
 double retrieveDoubleMDNode(MDNode *MDN);

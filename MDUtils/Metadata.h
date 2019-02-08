@@ -30,6 +30,7 @@
 
 #define INPUT_INFO_METADATA    "taffo.info"
 #define FUNCTION_ARGS_METADATA "taffo.funinfo"
+#define STRUCT_INFO_METADATA   "taffo.structinfo"
 #define COMP_ERROR_METADATA    "taffo.abserror"
 #define WRONG_CMP_METADATA     "taffo.wrongcmptol"
 #define MAX_REC_METADATA       "taffo.maxrec"
@@ -55,7 +56,7 @@ public:
   /// Get the Input Info (Type, Range, Initial Error) attached to I.
   InputInfo* retrieveInputInfo(const Instruction &I);
 
-  /// Get the Input Info (Type, Range, Initial Error) attached to Globel Variable V.
+  /// Get the Input Info (Type, Range, Initial Error) attached to Global Variable V.
   InputInfo* retrieveInputInfo(const GlobalObject &V);
 
   /// Fill vector ResII with the InputInfo for F's parameters retrieved from F's metadata.
@@ -78,6 +79,15 @@ public:
   /// Each InputInfo object refers to the function parameter with the same index.
   static void setArgumentInputInfoMetadata(Function &F,
 					   const ArrayRef<InputInfo *> AInfo);
+
+  /// Get the StructInfo attached to an Instruction or GlobalVariable.
+  StructInfo* retrieveStructInfo(const Instruction &I);
+  StructInfo* retrieveStructInfo(const GlobalObject &V);
+
+  /// Attach metadata containing field-wise Input Info for an Instruction
+  /// or GlobalVariable of a struct type.
+  static void setStructInfoMetadata(Instruction &I, const StructInfo &SInfo);
+  static void setStructInfoMetadata(GlobalObject &V, const StructInfo &SInfo);
 
   /// Attach MaxRecursionCount to the given function.
   /// Attaches metadata containing the maximum number of recursive calls
@@ -136,13 +146,16 @@ protected:
   DenseMap<MDNode *, std::unique_ptr<Range> > Ranges;
   DenseMap<MDNode *, std::unique_ptr<double> > IErrors;
   DenseMap<MDNode *, std::unique_ptr<InputInfo> > IInfos;
+  DenseMap<MDNode *, std::unique_ptr<MDInfo> > StructInfos;
 
   TType *retrieveTType(MDNode *MDN);
   Range *retrieveRange(MDNode *MDN);
   double *retrieveError(MDNode *MDN);
   InputInfo *retrieveInputInfo(MDNode *MDN);
+  StructInfo *retrieveStructInfo(MDNode *MDN);
 
   std::unique_ptr<InputInfo> createInputInfoFromMetadata(MDNode *MDN);
+  std::unique_ptr<StructInfo> createStructInfoFromMetadata(MDNode *MDN);
 
   static Optional<unsigned> retrieveLUCFromHeaderMD(const Loop &L);
   static Optional<unsigned> retrieveLUCFromFunctionMD(const Loop &L, LoopInfo &LI);

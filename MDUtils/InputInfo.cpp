@@ -29,6 +29,13 @@ std::unique_ptr<TType> TType::createFromMetadata(MDNode *MDN) {
   llvm_unreachable("Unsupported data type.");
 }
 
+bool TType::isTTypeMetadata(Metadata *MD) {
+  if (MDNode *MDN = dyn_cast_or_null<MDNode>(MD))
+    return FPType::isFPTypeMetadata(MDN);
+  else
+    return false;
+}
+
 bool FPType::isFPTypeMetadata(MDNode *MDN) {
   if (MDN->getNumOperands() < 1)
     return false;
@@ -124,6 +131,14 @@ std::unique_ptr<Range> Range::createFromMetadata(MDNode *MDN) {
   return std::unique_ptr<Range>(new Range(Min, Max));
 }
 
+bool Range::isRangeMetadata(Metadata *MD) {
+  MDNode *MDN = dyn_cast_or_null<MDNode>(MD);
+  return MDN != nullptr
+    && MDN->getNumOperands() == 2U
+    && isa<ConstantAsMetadata>(MDN->getOperand(0U).get())
+    && isa<ConstantAsMetadata>(MDN->getOperand(1U).get());
+}
+
 MDNode *Range::toMetadata(LLVMContext &C) const {
   Metadata *RangeMD[] = {createDoubleMetadata(C, this->Min),
 			 createDoubleMetadata(C, this->Max)};
@@ -138,6 +153,14 @@ MDNode *InitialErrorToMetadata(LLVMContext &C, double Error) {
     return createDoubleMDNode(C, Error);
 }
 
+bool IsInitialErrorMetadata(Metadata *MD) {
+  MDNode *MDN = dyn_cast_or_null<MDNode>(MD);
+  if (MDN == nullptr || MDN->getNumOperands() != 1U)
+    return false;
+
+  return isa<ConstantAsMetadata>(MDN->getOperand(0U).get());
+}
+
 MDNode *InputInfo::toMetadata(LLVMContext &C) const {
   Metadata *Null = ConstantAsMetadata::get(ConstantInt::getFalse(C));
   Metadata *TypeMD = (IType) ? IType->toMetadata(C) : Null;
@@ -146,6 +169,36 @@ MDNode *InputInfo::toMetadata(LLVMContext &C) const {
 
   Metadata *InputMDs[] = {TypeMD, RangeMD, ErrorMD};
   return MDNode::get(C, InputMDs);
+}
+
+bool InputInfo::isInputInfoMetadata(Metadata *MD) {
+  MDNode *MDN = dyn_cast<MDNode>(MD);
+  if (MDN == nullptr || MDN->getNumOperands() != 3U)
+    return false;
+
+  Metadata *Op0 = MDN->getOperand(0U).get();
+  if (!(IsNullInputInfoField(Op0) || TType::isTTypeMetadata(Op0)))
+    return false;
+
+  Metadata *Op1 = MDN->getOperand(1U).get();
+  if (!(IsNullInputInfoField(Op1) || Range::isRangeMetadata(Op1)))
+    return false;
+
+  Metadata *Op2 = MDN->getOperand(2U).get();
+  if (!(IsNullInputInfoField(Op2) || IsInitialErrorMetadata(Op2)))
+    return false;
+
+  return true;
+}
+
+MDNode *StructInfo::toMetadata(LLVMContext &C) const {
+  Metadata *Null = ConstantAsMetadata::get(ConstantInt::getFalse(C));
+  SmallVector<Metadata *, 4U> FieldMDs;
+  FieldMDs.reserve(Fields.size());
+  for (MDInfo *MDI : Fields) {
+    FieldMDs.push_back((MDI) ? MDI->toMetadata(C) : Null);
+  }
+  return MDNode::get(C, FieldMDs);
 }
 
 std::unique_ptr<CmpErrorInfo> CmpErrorInfo::createFromMetadata(MDNode *MDN) {
@@ -158,6 +211,18 @@ std::unique_ptr<CmpErrorInfo> CmpErrorInfo::createFromMetadata(MDNode *MDN) {
 
 MDNode *CmpErrorInfo::toMetadata(LLVMContext &C) const {
   return createDoubleMDNode(C, MaxTolerance);
+}
+
+bool IsNullInputInfoField(Metadata *MD) {
+  ConstantAsMetadata *CMD = dyn_cast<ConstantAsMetadata>(MD);
+  if (CMD == nullptr)
+    return false;
+
+  ConstantInt *CI = dyn_cast<ConstantInt>(CMD->getValue());
+  if (CI == nullptr)
+    return false;
+
+  return CI->isZero() && CI->getBitWidth() == 1U;
 }
 
 } // end namespace mdutils
