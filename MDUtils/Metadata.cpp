@@ -18,6 +18,8 @@
 
 namespace mdutils {
 
+using namespace llvm;
+
 MetadataManager& MetadataManager::getMetadataManager() {
   static MetadataManager Instance;
   return Instance;

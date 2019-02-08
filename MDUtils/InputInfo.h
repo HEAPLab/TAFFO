@@ -21,7 +21,6 @@
 #include "llvm/IR/Metadata.h"
 
 namespace mdutils {
-using namespace llvm;
 
 #define FIXP_TYPE_FLAG "fixp"
 
@@ -39,12 +38,12 @@ public:
   /// Safe approximation of the maximum value representable with this Type.
   virtual double getMaxValueBound() const = 0;
 
-  virtual MDNode *toMetadata(LLVMContext &C) const = 0;
+  virtual llvm::MDNode *toMetadata(llvm::LLVMContext &C) const = 0;
 
   virtual ~TType() = default;
 
-  static std::unique_ptr<TType> createFromMetadata(MDNode *MDN);
-  static bool isTTypeMetadata(Metadata *MD);
+  static std::unique_ptr<TType> createFromMetadata(llvm::MDNode *MDN);
+  static bool isTTypeMetadata(llvm::Metadata *MD);
 
   TTypeKind getKind() const { return Kind; }
 private:
@@ -65,14 +64,14 @@ public:
   double getRoundingError() const override;
   double getMinValueBound() const override;
   double getMaxValueBound() const override;
-  MDNode *toMetadata(LLVMContext &C) const override;
+  llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
   unsigned getWidth() const { return std::abs(Width); }
   int getSWidth() const { return Width; }
   unsigned getPointPos() const { return PointPos; }
   bool isSigned() const { return Width < 0; }
 
-  static bool isFPTypeMetadata(MDNode *MDN);
-  static std::unique_ptr<FPType> createFromMetadata(MDNode *MDN);
+  static bool isFPTypeMetadata(llvm::MDNode *MDN);
+  static std::unique_ptr<FPType> createFromMetadata(llvm::MDNode *MDN);
 
   static bool classof(const TType *T) { return T->getKind() == K_FPType; }
 protected:
@@ -88,14 +87,14 @@ public:
   Range() : Min(0.0), Max(0.0) {}
   Range(double Min, double Max) : Min(Min), Max(Max) {}
 
-  MDNode *toMetadata(LLVMContext &C) const;
-  static std::unique_ptr<Range> createFromMetadata(MDNode *MDN);
-  static bool isRangeMetadata(Metadata *MD);
+  llvm::MDNode *toMetadata(llvm::LLVMContext &C) const;
+  static std::unique_ptr<Range> createFromMetadata(llvm::MDNode *MDN);
+  static bool isRangeMetadata(llvm::Metadata *MD);
 };
 
-std::unique_ptr<double> CreateInitialErrorFromMetadata(MDNode *MDN);
-MDNode *InitialErrorToMetadata(double Error);
-bool IsInitialErrorMetadata(Metadata *MD);
+std::unique_ptr<double> CreateInitialErrorFromMetadata(llvm::MDNode *MDN);
+llvm::MDNode *InitialErrorToMetadata(double Error);
+bool IsInitialErrorMetadata(llvm::Metadata *MD);
 
 class MDInfo {
 public:
@@ -103,7 +102,7 @@ public:
 
   MDInfo(MDInfoKind K) : Kind(K) {}
 
-  virtual MDNode *toMetadata(LLVMContext &C) const = 0;
+  virtual llvm::MDNode *toMetadata(llvm::LLVMContext &C) const = 0;
 
   virtual ~MDInfo() = default;
   MDInfoKind getKind() const { return Kind; }
@@ -125,8 +124,8 @@ struct InputInfo : public MDInfo {
   InputInfo(TType *T, Range *R, double *Error)
     : MDInfo(K_Field), IType(T), IRange(R), IError(Error) {}
 
-  MDNode *toMetadata(LLVMContext &C) const override;
-  static bool isInputInfoMetadata(Metadata *MD);
+  llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
+  static bool isInputInfoMetadata(llvm::Metadata *MD);
 
   InputInfo &operator=(const InputInfo &O) {
     assert(this->getKind() == O.getKind());
@@ -149,7 +148,7 @@ public:
   typedef FieldsType::const_iterator const_iterator;
   typedef FieldsType::size_type size_type;
 
-  StructInfo(const ArrayRef<MDInfo *> SInfos)
+  StructInfo(const llvm::ArrayRef<MDInfo *> SInfos)
     : MDInfo(K_Struct), Fields(SInfos.begin(), SInfos.end()) {}
 
   iterator begin() { return Fields.begin(); }
@@ -159,7 +158,7 @@ public:
   size_type size() const { return Fields.size(); }
   MDInfo *getField(size_type I) const { return Fields[I]; }
 
-  MDNode *toMetadata(LLVMContext &C) const override;
+  llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
 
   static bool classof(const MDInfo *M) { return M->getKind() == K_Struct; }
 };
@@ -174,16 +173,16 @@ public:
   CmpErrorInfo(double MaxTolerance, bool MayBeWrong = true)
     : MaxTolerance(MaxTolerance), MayBeWrong(MayBeWrong) {}
 
-  MDNode *toMetadata(LLVMContext &C) const;
+  llvm::MDNode *toMetadata(llvm::LLVMContext &C) const;
 
-  static std::unique_ptr<CmpErrorInfo> createFromMetadata(MDNode *MDN);
+  static std::unique_ptr<CmpErrorInfo> createFromMetadata(llvm::MDNode *MDN);
 };
 
 
-bool IsNullInputInfoField(Metadata *MD);
+bool IsNullInputInfoField(llvm::Metadata *MD);
 
-MDNode *createDoubleMDNode(LLVMContext &C, double Value);
-double retrieveDoubleMDNode(MDNode *MDN);
+llvm::MDNode *createDoubleMDNode(llvm::LLVMContext &C, double Value);
+double retrieveDoubleMDNode(llvm::MDNode *MDN);
 
 } // end namespace mdutils
 

@@ -43,8 +43,6 @@
 
 namespace mdutils {
 
-using namespace llvm;
-
 /// Class that converts LLVM Metadata into the in.memory representation.
 /// It caches internally the converted data structures
 /// to reduce memory consumption and conversion overhead.
@@ -54,113 +52,117 @@ public:
   static MetadataManager& getMetadataManager();
 
   /// Get the Input Info (Type, Range, Initial Error) attached to I.
-  InputInfo* retrieveInputInfo(const Instruction &I);
+  InputInfo* retrieveInputInfo(const llvm::Instruction &I);
 
   /// Get the Input Info (Type, Range, Initial Error) attached to Global Variable V.
-  InputInfo* retrieveInputInfo(const GlobalObject &V);
+  InputInfo* retrieveInputInfo(const llvm::GlobalObject &V);
 
   /// Fill vector ResII with the InputInfo for F's parameters retrieved from F's metadata.
-  void retrieveArgumentInputInfo(const Function &F,
-				 SmallVectorImpl<InputInfo *> &ResII);
+  void retrieveArgumentInputInfo(const llvm::Function &F,
+				 llvm::SmallVectorImpl<InputInfo *> &ResII);
 
   /// Attach to Instruction I an input info metadata node
   /// containing Type info T, Range, and initial Error.
-  static void setInputInfoMetadata(Instruction &I, const InputInfo &IInfo);
+  static void setInputInfoMetadata(llvm::Instruction &I, const InputInfo &IInfo);
 
   /// Attach Input Info metadata to global object V.
   /// IInfo contains pointers to type, range and initial error
   /// to be attached to global object V as metadata.
-  static void setInputInfoMetadata(GlobalObject &V, const InputInfo &IInfo);
+  static void setInputInfoMetadata(llvm::GlobalObject &V, const InputInfo &IInfo);
 
   /// Attach metadata containing types, ranges and initial absolute errors
   /// for each argument of the given function.
   /// AInfo is an array/vector of InputInfo object containing type,
   /// range and initial error of each formal parameter of F.
   /// Each InputInfo object refers to the function parameter with the same index.
-  static void setArgumentInputInfoMetadata(Function &F,
-					   const ArrayRef<InputInfo *> AInfo);
+  static void setArgumentInputInfoMetadata(llvm::Function &F,
+					   const llvm::ArrayRef<InputInfo *> AInfo);
 
   /// Get the StructInfo attached to an Instruction or GlobalVariable.
-  StructInfo* retrieveStructInfo(const Instruction &I);
-  StructInfo* retrieveStructInfo(const GlobalObject &V);
+  StructInfo* retrieveStructInfo(const llvm::Instruction &I);
+  StructInfo* retrieveStructInfo(const llvm::GlobalObject &V);
 
   /// Attach metadata containing field-wise Input Info for an Instruction
   /// or GlobalVariable of a struct type.
-  static void setStructInfoMetadata(Instruction &I, const StructInfo &SInfo);
-  static void setStructInfoMetadata(GlobalObject &V, const StructInfo &SInfo);
+  static void setStructInfoMetadata(llvm::Instruction &I, const StructInfo &SInfo);
+  static void setStructInfoMetadata(llvm::GlobalObject &V, const StructInfo &SInfo);
 
   /// Attach MaxRecursionCount to the given function.
   /// Attaches metadata containing the maximum number of recursive calls
   /// that is allowed for function F.
   static void
-  setMaxRecursionCountMetadata(Function &F, unsigned MaxRecursionCount);
+  setMaxRecursionCountMetadata(llvm::Function &F, unsigned MaxRecursionCount);
 
   /// Read the MaxRecursionCount from metadata attached to function F.
   /// Returns 0 if no metadata have been found.
-  static unsigned retrieveMaxRecursionCount(const Function &F);
+  static unsigned retrieveMaxRecursionCount(const llvm::Function &F);
 
   /// Attach unroll count metadata to loop L.
   /// Attaches UnrollCount as the number of times to unroll loop L
   /// as metadata to the terminator instruction of the loop header.
   static void
-  setLoopUnrollCountMetadata(Loop &L, unsigned UnrollCount);
+  setLoopUnrollCountMetadata(llvm::Loop &L, unsigned UnrollCount);
 
   /// Attach loop unroll metadata to Function F.
   /// Loop unroll counts must be provided in Loop preorder.
   static void
-  setLoopUnrollCountMetadata(Function &F, const SmallVectorImpl<Optional<unsigned> > &LUCs);
+  setLoopUnrollCountMetadata(llvm::Function &F,
+			     const llvm::SmallVectorImpl<llvm::Optional<unsigned> > &LUCs);
 
   /// Read loop unroll count from metadata attached to the header of L.
-  static Optional<unsigned> retrieveLoopUnrollCount(const Loop &L, LoopInfo *LI = nullptr);
+  static llvm::Optional<unsigned>
+  retrieveLoopUnrollCount(const llvm::Loop &L, llvm::LoopInfo *LI = nullptr);
 
   /// Attach metadata containing the computed error to the given instruction.
-  static void setErrorMetadata(Instruction &I, double Error);
+  static void setErrorMetadata(llvm::Instruction &I, double Error);
 
   /// Get the error propagated for I from metadata.
-  static double retrieveErrorMetadata(const Instruction &I);
+  static double retrieveErrorMetadata(const llvm::Instruction &I);
 
   /// Attach maximum error tolerance to Cmp instruction.
   /// The metadata are attached only if the comparison may be wrong.
-  static void setCmpErrorMetadata(Instruction &I, const CmpErrorInfo &CEI);
+  static void setCmpErrorMetadata(llvm::Instruction &I, const CmpErrorInfo &CEI);
 
   /// Get the computed comparison error info from metadata attached to I.
-  static std::unique_ptr<CmpErrorInfo> retrieveCmpError(const Instruction &I);
+  static std::unique_ptr<CmpErrorInfo> retrieveCmpError(const llvm::Instruction &I);
 
   /// Set this function as a starting point for error analysis.
-  static void setStartingPoint(Function &F);
+  static void setStartingPoint(llvm::Function &F);
 
   /// Returns true if F has been marked as a starting point for error analysis.
-  static bool isStartingPoint(const Function &F);
+  static bool isStartingPoint(const llvm::Function &F);
 
   /// Mark instruction/global variable I/V as a target with name `Name'.
-  static void setTargetMetadata(Instruction &I, StringRef Name);
-  static void setTargetMetadata(GlobalObject &V, StringRef Name);
+  static void setTargetMetadata(llvm::Instruction &I, llvm::StringRef Name);
+  static void setTargetMetadata(llvm::GlobalObject &V, llvm::StringRef Name);
 
   /// Get the name of the target of this instruction/global variable,
   /// if it is a target. Returns an empty Optional if it is not a target.
-  static Optional<StringRef> retrieveTargetMetadata(const Instruction &I);
-  static Optional<StringRef> retrieveTargetMetadata(const GlobalObject &V);
+  static llvm::Optional<llvm::StringRef> retrieveTargetMetadata(const llvm::Instruction &I);
+  static llvm::Optional<llvm::StringRef> retrieveTargetMetadata(const llvm::GlobalObject &V);
 
 protected:
-  DenseMap<MDNode *, std::unique_ptr<TType> > TTypes;
-  DenseMap<MDNode *, std::unique_ptr<Range> > Ranges;
-  DenseMap<MDNode *, std::unique_ptr<double> > IErrors;
-  DenseMap<MDNode *, std::unique_ptr<InputInfo> > IInfos;
-  DenseMap<MDNode *, std::unique_ptr<MDInfo> > StructInfos;
+  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<TType> > TTypes;
+  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<Range> > Ranges;
+  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<double> > IErrors;
+  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<InputInfo> > IInfos;
+  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<MDInfo> > StructInfos;
 
-  TType *retrieveTType(MDNode *MDN);
-  Range *retrieveRange(MDNode *MDN);
-  double *retrieveError(MDNode *MDN);
-  InputInfo *retrieveInputInfo(MDNode *MDN);
-  StructInfo *retrieveStructInfo(MDNode *MDN);
+  TType *retrieveTType(llvm::MDNode *MDN);
+  Range *retrieveRange(llvm::MDNode *MDN);
+  double *retrieveError(llvm::MDNode *MDN);
+  InputInfo *retrieveInputInfo(llvm::MDNode *MDN);
+  StructInfo *retrieveStructInfo(llvm::MDNode *MDN);
 
-  std::unique_ptr<InputInfo> createInputInfoFromMetadata(MDNode *MDN);
-  std::unique_ptr<StructInfo> createStructInfoFromMetadata(MDNode *MDN);
+  std::unique_ptr<InputInfo> createInputInfoFromMetadata(llvm::MDNode *MDN);
+  std::unique_ptr<StructInfo> createStructInfoFromMetadata(llvm::MDNode *MDN);
 
-  static Optional<unsigned> retrieveLUCFromHeaderMD(const Loop &L);
-  static Optional<unsigned> retrieveLUCFromFunctionMD(const Loop &L, LoopInfo &LI);
-  static unsigned getLoopIndex(const Loop &L, LoopInfo &LI);
-  static SmallVector<Optional<unsigned>, 4U> retrieveLUCListFromFunctionMD(Function &F);
+  static llvm::Optional<unsigned> retrieveLUCFromHeaderMD(const llvm::Loop &L);
+  static llvm::Optional<unsigned>
+  retrieveLUCFromFunctionMD(const llvm::Loop &L, llvm::LoopInfo &LI);
+  static unsigned getLoopIndex(const llvm::Loop &L, llvm::LoopInfo &LI);
+  static llvm::SmallVector<llvm::Optional<unsigned>, 4U>
+  retrieveLUCListFromFunctionMD(llvm::Function &F);
 
 private:
   static MetadataManager Instance;
