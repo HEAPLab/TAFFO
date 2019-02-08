@@ -149,6 +149,56 @@ And, at the end of the file,
 
 In this case, the i32 element of the structure does not have input information, while the float element does and is stored in the `!1` node.
 
+**Related Functions:**
+
+```cpp
+#include "ErrorPropagator/MDUtils/Metadata.h"
+
+StructInfo* retrieveStructInfo(const Instruction &I);
+static void setStructInfoMetadata(Instruction &I, const StructInfo &SInfo);
+
+StructInfo* retrieveStructInfo(const GlobalObject &V);
+static void setStructInfoMetadata(GlobalObject &V, const StructInfo &SInfo);
+```
+These functions store data into `StructInfo` objects.
+`StructInfo` objects contain a set of pointers to `MDInfo` objects
+ordered in the same way as the fields of the corresponding struct sype.
+A `MDInfo` boject can either be another `StructInfo` instance,
+in case the corresponding field is itself a struct,
+or an instance of `InputInfo`, for regular fields.
+If a pointer to a `MDInfo` object is null, it means there is no data
+for the corresponding field.
+
+**Example:**
+```cpp
+...
+Instruction I = ...;
+FPType FPT(32, 12);
+Range R(0,42);
+double Err = 1e-8;
+InputInfo IInfo(&FPT, &R, &Err);
+MDInfo * S1[] = { nullptr, &IInfo };
+StructInfo SI1(S1);
+MDInfo * S2[] = { &IInfo, nullptr, &SI1 };
+StructInfo SI2(S2);
+
+MetadataManager::setStructInfoMetadata(I, SI2);
+```
+In the piece of code above, Instruction `I` could be of a type of this kind:
+```cpp
+struct {
+  int FixedPointField1;
+  any_type1 SomethingElse1;
+  struct {
+    any_type2 SomethingElse2;
+    int FixedPointField2;
+  } StructField;
+};
+```
+The data contained in `IInfo` is attached to fields `FixedPointField1`
+and `FixedPointField2`, while no data is associated to fields
+`SomethingElse1` and `SomethingElse2`.
+
 
 #### Input Information of Function Arguments
 
