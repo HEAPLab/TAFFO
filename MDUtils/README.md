@@ -202,25 +202,34 @@ and `FixedPointField2`, while no data is associated to fields
 
 #### Input Information of Function Arguments
 
-The input information metadata for all the arguments is collected, in the same order of the arguments, as a metadata tuple, which is then tagged to the function as `!taffo.funinfo`.
+The input information metadata for all the arguments (whether struct-typed or not) is collected, in the same order of the arguments, as a metadata tuple, which is then tagged to the function as `!taffo.funinfo`.
+
+For each argument, two consecutive items in the metadata tuple are allocated:
+
+1. An `i32`-typed identifier specifying the type of the input info metadata:
+	- `0` if the argument is not associated to any input info (in this case, the following tuple element is ignored)
+	- `1` for non-struct argument input info (corresponding to `!taffo.inputinfo`)
+	- `2` for struct argument input info (corresponding to `!taffo.structinfo`)
+2. A reference to the metadata tuple of the argument
 
 **Example:**
 
 ```
-define i32 @slarti(i64 %x, i64 %y, i32 %n) #0 !taffo.funinfo !2 {
+define i32 @slarti(i64 %x, {float, i32} %y, i32 %n) #0 !taffo.funinfo !2 {
 [...]
 ```
 
 at the end of the file:
 
 ```
-!2 = !{!3, !4, !5} ; !3 = %x, !4 = %y, !5 = %n
+!2 = !{i32 1, !3, i32 2, !15, i32 1, !5} ; !3 = %x, !4 = %y, !5 = %n
 
-!3 = !{!6, !12, !7} ; !6 = range of %x, !7 = initial error of %x
+!3 = !{!6, !12, !7}
 !6 = !{!"fixp", i32 -64, i32 10}
 !12 = !{double 1.0e+00, double 5.0e+00}
 !7 = !{double 1.000000e-03}
 
+!15 = !{!4, i1 0}
 !4 = !{!8, !13, !9}
 !8 = !{!"fixp", i32 -64, i32 10}
 !13 = !{double -5.0e+00, double 6.0e+00}
@@ -232,7 +241,7 @@ at the end of the file:
 !11 = !{double 0.000000e+01}
 ```
 
-**Related functions:**
+**Related functions TO BE UPDATED:**
 
 ```cpp
 #include "ErrorPropagator/MDUtils/Metadata.h"
