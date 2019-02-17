@@ -34,16 +34,34 @@ InputInfo* MetadataManager::retrieveInputInfo(const GlobalObject &V) {
 }
 
 void MetadataManager::
-retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<InputInfo *> &ResII) {
+retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<MDInfo *> &ResII) {
   MDNode *ArgsMD = F.getMetadata(FUNCTION_ARGS_METADATA);
   if (ArgsMD == nullptr)
     return;
 
-  ResII.reserve(ArgsMD->getNumOperands());
+  assert((ArgsMD->getNumOperands() % 2) == 0 && "invalid funinfo");
+  unsigned nfunargs = ArgsMD->getNumOperands() / 2;
+  assert(nfunargs != F.getNumOperands() && "invalid funinfo");
+  ResII.reserve(nfunargs);
   for (auto ArgMDOp = ArgsMD->op_begin(), ArgMDOpEnd = ArgsMD->op_end();
-       ArgMDOp != ArgMDOpEnd; ++ArgMDOp) {
-    MDNode *ArgMDNode = cast<MDNode>(ArgMDOp->get());
-    ResII.push_back(retrieveInputInfo(ArgMDNode));
+       ArgMDOp != ArgMDOpEnd;) {
+    Constant *mdtid = cast<ConstantAsMetadata>(ArgMDOp->get())->getValue();
+    ArgMDOp++;
+    int tid = cast<ConstantInt>(mdtid)->getZExtValue();
+    switch (tid) {
+      case 0:
+        ResII.push_back(nullptr);
+        break;
+      case 1:
+        ResII.push_back(retrieveInputInfo(cast<MDNode>(ArgMDOp->get())));
+        break;
+      case 2:
+        ResII.push_back(retrieveStructInfo(cast<MDNode>(ArgMDOp->get())));
+        break;
+      default:
+        assert("invalid funinfo type id");
+    }
+    ArgMDOp++;
   }
 }
 
@@ -58,14 +76,30 @@ setInputInfoMetadata(GlobalObject &V, const InputInfo &IInfo) {
 }
 
 void MetadataManager::
-setArgumentInputInfoMetadata(Function &F, const ArrayRef<InputInfo *> AInfo) {
+setArgumentInputInfoMetadata(Function &F, const ArrayRef<MDInfo *> AInfo) {
   LLVMContext &Context = F.getContext();
   SmallVector<Metadata *, 2U> AllArgsMD;
   AllArgsMD.reserve(AInfo.size());
 
-  for (InputInfo *IInfo : AInfo) {
-    assert(IInfo != nullptr);
-    AllArgsMD.push_back(IInfo->toMetadata(Context));
+  for (MDInfo *info : AInfo) {
+    int tid = -1;
+    Metadata *val;
+    if (info == nullptr) {
+      tid = 0;
+      val = ConstantAsMetadata::get(Constant::getNullValue(Type::getInt1Ty(Context)));
+    } else if (InputInfo *IInfo = dyn_cast<InputInfo>(info)) {
+      tid = 1;
+      val = IInfo->toMetadata(Context);
+    } else if (StructInfo *SInfo = dyn_cast<StructInfo>(info)) {
+      tid = 2;
+      val = SInfo->toMetadata(Context);
+    } else {
+      assert("invalid MDInfo in array");
+    }
+    ConstantInt *ctid = ConstantInt::get(IntegerType::getInt32Ty(Context), tid);
+    ConstantAsMetadata *mdtid = ConstantAsMetadata::get(ctid);
+    AllArgsMD.push_back(mdtid);
+    AllArgsMD.push_back(val);
   }
 
   F.setMetadata(FUNCTION_ARGS_METADATA, MDNode::get(Context, AllArgsMD));

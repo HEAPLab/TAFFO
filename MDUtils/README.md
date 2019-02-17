@@ -170,6 +170,7 @@ If a pointer to a `MDInfo` object is null, it means there is no data
 for the corresponding field.
 
 **Example:**
+
 ```cpp
 ...
 Instruction I = ...;
@@ -245,14 +246,14 @@ at the end of the file:
 
 ```cpp
 #include "ErrorPropagator/MDUtils/Metadata.h"
-void MetadataManager::retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<InputInfo *> &ResII);
-static void MetadataManager::setArgumentInputInfoMetadata(Function &F, const ArrayRef<InputInfo *> AInfo);
+void MetadataManager::retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<MDInfo *> &ResII);
+static void MetadataManager::setArgumentInputInfoMetadata(Function &F, const ArrayRef<MDInfo *> AInfo);
 ```
 
-The `InputInfo` instances for these functions can be created in the same way as for Instructions and Global Variables.
-The `MetadataManager::setArgumentInputInfoMetadata` function expects an array of pointers to `InputInfo` instances, one for each formal parameter, and in the same order.
-The `MetadataManager::retrieveArgumentInputInfo` function populates vector `ResII` with pointers to an `InputInfo` object for each argument.
-Again, `MetadataManager` keeps the ownership of  the `InputInfo` pointers it returns, but does not gain ownership of those it receives.
+The `MDInfo` instances for these functions can be created in the same way as for Instructions and Global Variables. They can be either instances of InputInfo or StructInfo, depending on the type of each function argument.
+The `MetadataManager::setArgumentInputInfoMetadata` function expects an array of pointers to `MDInfo` instances, one for each formal parameter, and in the same order.
+The `MetadataManager::retrieveArgumentInputInfo` function populates vector `ResII` with pointers to an `MDInfo` object for each argument.
+Again, `MetadataManager` takes ownership of the `MDInfo` pointers it returns, but does not gain ownership of those it receives.
 
 ## ErrorPropagation Specific Metadata
 

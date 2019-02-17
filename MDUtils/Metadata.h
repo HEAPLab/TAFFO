@@ -59,7 +59,7 @@ public:
 
   /// Fill vector ResII with the InputInfo for F's parameters retrieved from F's metadata.
   void retrieveArgumentInputInfo(const llvm::Function &F,
-				 llvm::SmallVectorImpl<InputInfo *> &ResII);
+				 llvm::SmallVectorImpl<MDInfo *> &ResII);
 
   /// Attach to Instruction I an input info metadata node
   /// containing Type info T, Range, and initial Error.
@@ -76,7 +76,7 @@ public:
   /// range and initial error of each formal parameter of F.
   /// Each InputInfo object refers to the function parameter with the same index.
   static void setArgumentInputInfoMetadata(llvm::Function &F,
-					   const llvm::ArrayRef<InputInfo *> AInfo);
+					   const llvm::ArrayRef<MDInfo *> AInfo);
 
   /// Get the StructInfo attached to an Instruction or GlobalVariable.
   StructInfo* retrieveStructInfo(const llvm::Instruction &I);
