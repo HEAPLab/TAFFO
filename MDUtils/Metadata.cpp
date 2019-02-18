@@ -41,7 +41,7 @@ retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<MDInfo *> &ResII) {
 
   assert((ArgsMD->getNumOperands() % 2) == 0 && "invalid funinfo");
   unsigned nfunargs = ArgsMD->getNumOperands() / 2;
-  assert(nfunargs != F.getNumOperands() && "invalid funinfo");
+  assert(nfunargs == F.getFunctionType()->getNumParams() && "invalid funinfo");
   ResII.reserve(nfunargs);
   for (auto ArgMDOp = ArgsMD->op_begin(), ArgMDOpEnd = ArgsMD->op_end();
        ArgMDOp != ArgMDOpEnd;) {
