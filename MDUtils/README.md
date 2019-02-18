@@ -242,7 +242,7 @@ at the end of the file:
 !11 = !{double 0.000000e+01}
 ```
 
-**Related functions TO BE UPDATED:**
+**Related functions:**
 
 ```cpp
 #include "ErrorPropagator/MDUtils/Metadata.h"
