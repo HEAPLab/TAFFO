@@ -114,14 +114,14 @@ private:
 /// Structure containing pointers to Type, Range, and initial Error
 /// of an LLVM Value.
 struct InputInfo : public MDInfo {
-  TType *IType;
-  Range *IRange;
-  double *IError;
+  std::shared_ptr<TType> IType;
+  std::shared_ptr<Range> IRange;
+  std::shared_ptr<double> IError;
 
   InputInfo()
     : MDInfo(K_Field), IType(nullptr), IRange(nullptr), IError(nullptr) {}
 
-  InputInfo(TType *T, Range *R, double *Error)
+  InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error)
     : MDInfo(K_Field), IType(T), IRange(R), IError(Error) {}
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
@@ -140,7 +140,7 @@ struct InputInfo : public MDInfo {
 
 class StructInfo : public MDInfo {
 private:
-  typedef llvm::SmallVector<MDInfo *, 4U> FieldsType;
+  typedef llvm::SmallVector<std::shared_ptr<MDInfo>, 4U> FieldsType;
   FieldsType Fields;
 
 public:
@@ -148,7 +148,10 @@ public:
   typedef FieldsType::const_iterator const_iterator;
   typedef FieldsType::size_type size_type;
 
-  StructInfo(const llvm::ArrayRef<MDInfo *> SInfos)
+  StructInfo(int size)
+    : MDInfo(K_Struct), Fields(size, nullptr) {}
+  
+  StructInfo(const llvm::ArrayRef<std::shared_ptr<MDInfo>> SInfos)
     : MDInfo(K_Struct), Fields(SInfos.begin(), SInfos.end()) {}
 
   iterator begin() { return Fields.begin(); }
@@ -156,7 +159,8 @@ public:
   const_iterator begin() const { return Fields.begin(); }
   const_iterator end() const { return Fields.end(); }
   size_type size() const { return Fields.size(); }
-  MDInfo *getField(size_type I) const { return Fields[I]; }
+  MDInfo *getField(size_type I) const { return Fields[I].get(); }
+  std::shared_ptr<MDInfo> getField(size_type I) { return Fields[I]; }
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
 

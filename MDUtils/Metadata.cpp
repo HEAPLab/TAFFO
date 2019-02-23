@@ -26,11 +26,11 @@ MetadataManager& MetadataManager::getMetadataManager() {
 }
 
 InputInfo* MetadataManager::retrieveInputInfo(const Instruction &I) {
-  return retrieveInputInfo(I.getMetadata(INPUT_INFO_METADATA));
+  return retrieveInputInfo(I.getMetadata(INPUT_INFO_METADATA)).get();
 }
 
 InputInfo* MetadataManager::retrieveInputInfo(const GlobalObject &V) {
-  return retrieveInputInfo(V.getMetadata(INPUT_INFO_METADATA));
+  return retrieveInputInfo(V.getMetadata(INPUT_INFO_METADATA)).get();
 }
 
 void MetadataManager::
@@ -53,10 +53,10 @@ retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<MDInfo *> &ResII) {
         ResII.push_back(nullptr);
         break;
       case 1:
-        ResII.push_back(retrieveInputInfo(cast<MDNode>(ArgMDOp->get())));
+        ResII.push_back(retrieveInputInfo(cast<MDNode>(ArgMDOp->get())).get());
         break;
       case 2:
-        ResII.push_back(retrieveStructInfo(cast<MDNode>(ArgMDOp->get())));
+        ResII.push_back(retrieveStructInfo(cast<MDNode>(ArgMDOp->get())).get());
         break;
       default:
         assert("invalid funinfo type id");
@@ -106,11 +106,11 @@ setArgumentInputInfoMetadata(Function &F, const ArrayRef<MDInfo *> AInfo) {
 }
 
 StructInfo* MetadataManager::retrieveStructInfo(const Instruction &I) {
-  return retrieveStructInfo(I.getMetadata(STRUCT_INFO_METADATA));
+  return retrieveStructInfo(I.getMetadata(STRUCT_INFO_METADATA)).get();
 }
 
 StructInfo* MetadataManager::retrieveStructInfo(const GlobalObject &V) {
-  return retrieveStructInfo(V.getMetadata(STRUCT_INFO_METADATA));
+  return retrieveStructInfo(V.getMetadata(STRUCT_INFO_METADATA)).get();
 }
 
 void MetadataManager::setStructInfoMetadata(Instruction &I, const StructInfo &SInfo) {
@@ -321,79 +321,74 @@ Optional<StringRef> MetadataManager::retrieveTargetMetadata(const GlobalObject &
 }
 
 
-TType *MetadataManager::retrieveTType(MDNode *MDN) {
+std::shared_ptr<TType> MetadataManager::retrieveTType(MDNode *MDN) {
   if (MDN == nullptr)
     return nullptr;
 
   auto CachedTT = TTypes.find(MDN);
   if (CachedTT != TTypes.end())
-    return CachedTT->second.get();
+    return CachedTT->second;
 
-  std::unique_ptr<TType> TT = TType::createFromMetadata(MDN);
-  TType *RetTT = TT.get();
+  std::shared_ptr<TType> TT(TType::createFromMetadata(MDN));
 
-  TTypes.insert(std::make_pair(MDN, std::move(TT)));
-  return RetTT;
+  TTypes.insert(std::make_pair(MDN, TT));
+  return TT;
 }
 
-Range *MetadataManager::retrieveRange(MDNode *MDN) {
+std::shared_ptr<Range> MetadataManager::retrieveRange(MDNode *MDN) {
   if (MDN == nullptr)
     return nullptr;
 
   auto CachedRange = Ranges.find(MDN);
   if (CachedRange != Ranges.end())
-    return CachedRange->second.get();
+    return CachedRange->second;
 
-  std::unique_ptr<Range> NRange = Range::createFromMetadata(MDN);
-  Range *RetRange = NRange.get();
+  std::shared_ptr<Range> NRange(Range::createFromMetadata(MDN));
 
-  Ranges.insert(std::make_pair(MDN, std::move(NRange)));
-  return RetRange;
+  Ranges.insert(std::make_pair(MDN, NRange));
+  return NRange;
 }
 
-double *MetadataManager::retrieveError(MDNode *MDN) {
+std::shared_ptr<double> MetadataManager::retrieveError(MDNode *MDN) {
   if (MDN == nullptr)
     return nullptr;
 
   auto CachedError = IErrors.find(MDN);
   if (CachedError != IErrors.end())
-    return CachedError->second.get();
+    return CachedError->second;
 
-  std::unique_ptr<double> NError = CreateInitialErrorFromMetadata(MDN);
-  double *RetError = NError.get();
+  std::shared_ptr<double> NError(CreateInitialErrorFromMetadata(MDN));
 
-  IErrors.insert(std::make_pair(MDN, std::move(NError)));
-  return RetError;
+  IErrors.insert(std::make_pair(MDN, NError));
+  return NError;
 }
 
-InputInfo *MetadataManager::retrieveInputInfo(MDNode *MDN) {
+std::shared_ptr<InputInfo> MetadataManager::retrieveInputInfo(MDNode *MDN) {
   if (MDN == nullptr)
     return nullptr;
 
   auto CachedIInfo = IInfos.find(MDN);
   if (CachedIInfo != IInfos.end())
-    return CachedIInfo->second.get();
+    return CachedIInfo->second;
 
-  std::unique_ptr<InputInfo> NIInfo = createInputInfoFromMetadata(MDN);
-  InputInfo *RetIInfo = NIInfo.get();
+  std::shared_ptr<InputInfo> NIInfo(createInputInfoFromMetadata(MDN));
 
-  IInfos.insert(std::make_pair(MDN, std::move(NIInfo)));
-  return RetIInfo;
+  IInfos.insert(std::make_pair(MDN, NIInfo));
+  return NIInfo;
 }
 
-StructInfo *MetadataManager::retrieveStructInfo(MDNode *MDN) {
+std::shared_ptr<StructInfo> MetadataManager::retrieveStructInfo(MDNode *MDN) {
   if (MDN == nullptr)
     return nullptr;
 
   auto CachedStructInfo = StructInfos.find(MDN);
   if (CachedStructInfo != StructInfos.end())
-    return cast<StructInfo>(CachedStructInfo->second.get());
+    return CachedStructInfo->second;
 
-  std::unique_ptr<StructInfo> NSInfo = createStructInfoFromMetadata(MDN);
-  StructInfo *RetSInfo = NSInfo.get();
+  std::shared_ptr<StructInfo> NSInfo(createStructInfoFromMetadata(MDN));
 
-  StructInfos.insert(std::make_pair(MDN, std::move(NSInfo)));
-  return RetSInfo;
+  StructInfos.insert(std::make_pair(MDN, NSInfo));
+  return NSInfo;
 }
 
 std::unique_ptr<InputInfo> MetadataManager::
@@ -402,15 +397,15 @@ createInputInfoFromMetadata(MDNode *MDN) {
   assert(MDN->getNumOperands() == 3U && "Must have Type, Range, Initial Error.");
 
   Metadata *ITypeMDN = MDN->getOperand(0U).get();
-  TType *IType = (IsNullInputInfoField(ITypeMDN))
+  std::shared_ptr<TType> IType = (IsNullInputInfoField(ITypeMDN))
     ? nullptr : retrieveTType(cast<MDNode>(ITypeMDN));
 
   Metadata *IRangeMDN = MDN->getOperand(1U).get();
-  Range *IRange = (IsNullInputInfoField(IRangeMDN))
+  std::shared_ptr<Range> IRange = (IsNullInputInfoField(IRangeMDN))
     ? nullptr : retrieveRange(cast<MDNode>(IRangeMDN));
 
   Metadata *IErrorMDN = MDN->getOperand(2U).get();
-  double *IError = (IsNullInputInfoField(IErrorMDN))
+  std::shared_ptr<double> IError = (IsNullInputInfoField(IErrorMDN))
     ? nullptr : retrieveError(cast<MDNode>(IErrorMDN));
 
   return std::unique_ptr<InputInfo>(new InputInfo(IType, IRange, IError));
@@ -420,7 +415,7 @@ std::unique_ptr<StructInfo> MetadataManager::
 createStructInfoFromMetadata(MDNode *MDN) {
   assert(MDN != nullptr);
 
-  SmallVector<MDInfo *, 4U> Fields;
+  SmallVector<std::shared_ptr<MDInfo>, 4U> Fields;
   Fields.reserve(MDN->getNumOperands());
   for (const MDOperand &MDO : MDN->operands()) {
     Metadata *MDField = MDO.get();

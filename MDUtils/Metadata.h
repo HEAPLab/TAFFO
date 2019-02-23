@@ -142,17 +142,17 @@ public:
   static llvm::Optional<llvm::StringRef> retrieveTargetMetadata(const llvm::GlobalObject &V);
 
 protected:
-  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<TType> > TTypes;
-  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<Range> > Ranges;
-  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<double> > IErrors;
-  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<InputInfo> > IInfos;
-  llvm::DenseMap<llvm::MDNode *, std::unique_ptr<MDInfo> > StructInfos;
+  llvm::DenseMap<llvm::MDNode *, std::shared_ptr<TType> > TTypes;
+  llvm::DenseMap<llvm::MDNode *, std::shared_ptr<Range> > Ranges;
+  llvm::DenseMap<llvm::MDNode *, std::shared_ptr<double> > IErrors;
+  llvm::DenseMap<llvm::MDNode *, std::shared_ptr<InputInfo> > IInfos;
+  llvm::DenseMap<llvm::MDNode *, std::shared_ptr<StructInfo> > StructInfos;
 
-  TType *retrieveTType(llvm::MDNode *MDN);
-  Range *retrieveRange(llvm::MDNode *MDN);
-  double *retrieveError(llvm::MDNode *MDN);
-  InputInfo *retrieveInputInfo(llvm::MDNode *MDN);
-  StructInfo *retrieveStructInfo(llvm::MDNode *MDN);
+  std::shared_ptr<TType> retrieveTType(llvm::MDNode *MDN);
+  std::shared_ptr<Range> retrieveRange(llvm::MDNode *MDN);
+  std::shared_ptr<double> retrieveError(llvm::MDNode *MDN);
+  std::shared_ptr<InputInfo> retrieveInputInfo(llvm::MDNode *MDN);
+  std::shared_ptr<StructInfo> retrieveStructInfo(llvm::MDNode *MDN);
 
   std::unique_ptr<InputInfo> createInputInfoFromMetadata(llvm::MDNode *MDN);
   std::unique_ptr<StructInfo> createStructInfoFromMetadata(llvm::MDNode *MDN);

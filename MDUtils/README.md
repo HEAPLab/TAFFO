@@ -95,11 +95,11 @@ static void MetadataManager::setInputInfoMetadata(GlobalObject &V, const InputIn
 
 The functions above use the `InputInfo` struct for storing the data to be converted to metadata.
 It contains the following public fields:
-- ` TType *IType;`: this is a pointer to an object describing the type of the instruction.
+- ` TType *IType;`: this is a shared pointer to an object describing the type of the instruction.
   The only supported type is currently `FPType`, which describes a fixed point type, and is a subclass of `TType`.
   For further information on the member fields and functions of `FPType`, please refer to file `InputInfo.h`.
-- `Range *IRange;`: this is a pointer to an instance of the `Range` struct, which simply contains the lower and upper bounds of the variable's range as `double` fields.
-- `double *IError;`: a pointer to a `double` containing the initial error for the current instruction/global variable.
+- `Range *IRange;`: this is a shared pointer to an instance of the `Range` struct, which simply contains the lower and upper bounds of the variable's range as `double` fields.
+- `double *IError;`: a shared pointer to a `double` containing the initial error for the current instruction/global variable.
 
 All of these fields are optional: if they are assigned the value `nullptr`, the TAFFO `MetadataManager` will emit `i1 false` for them.
 
@@ -107,19 +107,18 @@ All of these fields are optional: if they are assigned the value `nullptr`, the 
 
 ```cpp
 ...
-FPType Ty(32U, 18U, false);
-Range R(1.0, 1.0e+02);
-double Err = 1.0e-8;
-InputInfo II(&Ty, &R, &Err);
+shared_ptr<FPType> Ty(new FPType(32U, 18U, false));
+shared_ptr<Range> R(new FPType(1.0, 1.0e+02));
+shared_ptr<double> Err(new double(1.0e-8));
+InputInfo II(Ty, R, Err);
 MetadataManager::setInputInfoMetadata(Instr, II);
 ```
 
 The piece of code above associates the range [1.0, 100] and the initial error 10^-8 to instruction Instr,
 which will be treated as an unsigned fixed point value with 18 fractionary bits and 12 integer bits (for a total width of 32 bits).
 
-Note that `MetadataManager` does not gain ownership of the pointers in the `InputInfo` object given to a `setInputInfoMetadata(...)` function.
-Conversely, it keeps ownership of the pointers returned by the `MetadataManager::retrieveInputInfo(...)` functions.
-The objects referred to by such pointers are cached into the `MetadataManager` instance that can be retrieved with the `static MetadataManager& getMetadataManager()` function,
+Since the fields of `InputInfo` are shared pointers, there is no need to worry about their ownership (this allows InputInfo to be used as the root owner of these objects, if needed).
+The objects referred to by such pointers are cached into a singleton `MetadataManager` instance that can be retrieved with the `static MetadataManager& getMetadataManager()` function,
 so that if multiple variables have the same range, type or initial error, a pointer to the same object is returned.
 
 #### Input Information of Struct-Typed Instructions and GlobalObjects
@@ -277,12 +276,14 @@ Each instruction/global variable may be associated with a single target.
 ```
 
 At the end of the file:
+
 ```
 !19 = !{!"OptionPrice7"}
 ```
 (The name of the target is OptionPrice7).
 
 Related functions:
+
 ```cpp
 #include "MDUtils/Metadata.h"
 static void MetadataManager::setTargetMetadata(Instruction &I, StringRef Name);

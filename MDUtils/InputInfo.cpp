@@ -195,7 +195,7 @@ MDNode *StructInfo::toMetadata(LLVMContext &C) const {
   Metadata *Null = ConstantAsMetadata::get(ConstantInt::getFalse(C));
   SmallVector<Metadata *, 4U> FieldMDs;
   FieldMDs.reserve(Fields.size());
-  for (MDInfo *MDI : Fields) {
+  for (std::shared_ptr<MDInfo> MDI : Fields) {
     FieldMDs.push_back((MDI) ? MDI->toMetadata(C) : Null);
   }
   return MDNode::get(C, FieldMDs);
