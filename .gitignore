@@ -35,3 +35,4 @@ dist
 *.magiclangtmp.s
 .vscode
 *.out
+test/simple-test-cases/recompile-all.log
