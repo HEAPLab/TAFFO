@@ -39,6 +39,8 @@ public:
   virtual double getMaxValueBound() const = 0;
 
   virtual llvm::MDNode *toMetadata(llvm::LLVMContext &C) const = 0;
+  
+  virtual TType *clone() const = 0;
 
   virtual ~TType() = default;
 
@@ -69,6 +71,10 @@ public:
   int getSWidth() const { return Width; }
   unsigned getPointPos() const { return PointPos; }
   bool isSigned() const { return Width < 0; }
+  
+  virtual TType *clone() const override {
+    return new FPType(Width, PointPos);
+  };
 
   static bool isFPTypeMetadata(llvm::MDNode *MDN);
   static std::unique_ptr<FPType> createFromMetadata(llvm::MDNode *MDN);
@@ -86,6 +92,7 @@ public:
 
   Range() : Min(0.0), Max(0.0) {}
   Range(double Min, double Max) : Min(Min), Max(Max) {}
+  Range(Range& r) : Min(r.Min), Max(r.Max) {}
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const;
   static std::unique_ptr<Range> createFromMetadata(llvm::MDNode *MDN);
@@ -103,6 +110,8 @@ public:
   MDInfo(MDInfoKind K) : Kind(K) {}
 
   virtual llvm::MDNode *toMetadata(llvm::LLVMContext &C) const = 0;
+  
+  virtual MDInfo *clone() const = 0;
 
   virtual ~MDInfo() = default;
   MDInfoKind getKind() const { return Kind; }
@@ -123,6 +132,13 @@ struct InputInfo : public MDInfo {
 
   InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error)
     : MDInfo(K_Field), IType(T), IRange(R), IError(Error) {}
+  
+  virtual MDInfo *clone() const override {
+    std::shared_ptr<TType> NewIType(IType.get() ? IType->clone() : nullptr);
+    std::shared_ptr<Range> NewIRange(IRange.get() ? new Range(*IRange) : nullptr);
+    std::shared_ptr<double> NewIError(IError.get() ? new double(*IError) : nullptr);
+    return new InputInfo(NewIType, NewIRange, NewIError);
+  }
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
   static bool isInputInfoMetadata(llvm::Metadata *MD);
@@ -133,7 +149,7 @@ struct InputInfo : public MDInfo {
     this->IRange = O.IRange;
     this->IError = O.IError;
     return *this;
-  }
+  };
 
   static bool classof(const MDInfo *M) { return M->getKind() == K_Field; }
 };
@@ -161,6 +177,17 @@ public:
   size_type size() const { return Fields.size(); }
   MDInfo *getField(size_type I) const { return Fields[I].get(); }
   std::shared_ptr<MDInfo> getField(size_type I) { return Fields[I]; }
+  
+  virtual MDInfo *clone() const override {
+    FieldsType newFields;
+    for (std::shared_ptr<MDInfo> oldF: Fields) {
+      if (oldF.get())
+        newFields.push_back(std::shared_ptr<MDInfo>(oldF->clone()));
+      else
+        newFields.push_back(std::shared_ptr<MDInfo>(nullptr));
+    }
+    return new StructInfo(newFields);
+  }
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
 
