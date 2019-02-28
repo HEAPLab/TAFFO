@@ -19,6 +19,7 @@
 #include <memory>
 #include "llvm/Support/Casting.h"
 #include "llvm/IR/Metadata.h"
+#include "llvm/IR/Type.h"
 
 namespace mdutils {
 
@@ -177,6 +178,39 @@ public:
   size_type size() const { return Fields.size(); }
   MDInfo *getField(size_type I) const { return Fields[I].get(); }
   std::shared_ptr<MDInfo> getField(size_type I) { return Fields[I]; }
+  
+  /** Builds a StructInfo with the recursive structure of the specified
+   *  LLVM Type. All non-struct struct members are set to nullptr.
+   *  @returns Either a StructInfo, or nullptr if the type does not
+   *    contain any structure. */
+  static std::shared_ptr<StructInfo> constructFromLLVMType(llvm::Type *t) {
+    int c = t->getNumContainedTypes();
+    if (c == 0)
+      return nullptr;
+    if (t->isStructTy()) {
+      FieldsType fields;
+      for (int i=0; i<c; i++)
+        fields.push_back(StructInfo::constructFromLLVMType(t->getContainedType(i)));
+      return std::make_shared<StructInfo>(StructInfo(fields));
+    }
+    return StructInfo::constructFromLLVMType(t->getContainedType(0));
+  }
+  
+  std::shared_ptr<MDInfo> resolveFromIndexList(llvm::Type *type, llvm::ArrayRef<unsigned> indices) {
+    llvm::Type *resolvedType = type;
+    std::shared_ptr<MDInfo> resolvedInfo(this);
+    for (unsigned idx: indices) {
+      if (resolvedInfo.get() == nullptr)
+        break;
+      if (resolvedType->isStructTy()) {
+        resolvedType = resolvedType->getContainedType(idx);
+        resolvedInfo = llvm::cast<StructInfo>(resolvedInfo.get())->getField(idx);
+      } else {
+        resolvedType = resolvedType->getContainedType(idx);
+      }
+    }
+    return resolvedInfo;
+  }
   
   virtual MDInfo *clone() const override {
     FieldsType newFields;
