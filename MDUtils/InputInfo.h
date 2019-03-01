@@ -17,6 +17,7 @@
 #define TAFFO_INPUT_INFO_H
 
 #include <memory>
+#include <sstream>
 #include "llvm/Support/Casting.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Type.h"
@@ -47,6 +48,10 @@ public:
 
   static std::unique_ptr<TType> createFromMetadata(llvm::MDNode *MDN);
   static bool isTTypeMetadata(llvm::Metadata *MD);
+  
+  virtual std::string toString() const {
+    return "TType";
+  };
 
   TTypeKind getKind() const { return Kind; }
 private:
@@ -79,6 +84,16 @@ public:
 
   static bool isFPTypeMetadata(llvm::MDNode *MDN);
   static std::unique_ptr<FPType> createFromMetadata(llvm::MDNode *MDN);
+  
+  virtual std::string toString() const override {
+    std::stringstream stm;
+    if (Width < 0)
+      stm << "s";
+    else
+      stm << "u";
+    stm << std::abs(Width) << "_" << PointPos << "fixp";
+    return stm.str();
+  };
 
   static bool classof(const TType *T) { return T->getKind() == K_FPType; }
 protected:
@@ -116,6 +131,10 @@ public:
 
   virtual ~MDInfo() = default;
   MDInfoKind getKind() const { return Kind; }
+  
+  virtual std::string toString() const {
+    return "MDInfo";
+  };
 
 private:
   const MDInfoKind Kind;
@@ -150,6 +169,26 @@ struct InputInfo : public MDInfo {
     this->IRange = O.IRange;
     this->IError = O.IError;
     return *this;
+  };
+  
+  virtual std::string toString() const override {
+    std::stringstream sstm;
+    sstm << "scalar(";
+    bool first = true;
+    if (IType.get()) {
+      first = false;
+      sstm << "type(" << IType->toString() << ")";
+    }
+    if (IRange.get()) {
+      if (!first) sstm << " "; else first = false;
+      sstm << "range(" << IRange->Min << ", " << IRange->Max << ")";
+    }
+    if (IError.get()) {
+      if (!first) sstm << " ";
+      sstm << "error(" << *IError << ")";
+    }
+    sstm << ")";
+    return sstm.str();
   };
 
   static bool classof(const MDInfo *M) { return M->getKind() == K_Field; }
@@ -222,6 +261,24 @@ public:
     }
     return new StructInfo(newFields);
   }
+  
+  virtual std::string toString() const override {
+    std::stringstream sstm;
+    sstm << "struct(";
+    bool first = true;
+    for (std::shared_ptr<MDInfo> i: Fields) {
+      if (!first)
+        sstm << ", ";
+      if (i.get()) {
+        sstm << i->toString();
+      } else {
+        sstm << "void()";
+      }
+      first = false;
+    }
+    sstm << ")";
+    return sstm.str();
+  };
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
 
