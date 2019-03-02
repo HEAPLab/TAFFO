@@ -95,7 +95,7 @@ public:
       stm << "s";
     else
       stm << "u";
-    stm << std::abs(Width) << "_" << PointPos << "fixp";
+    stm << std::abs(Width)-PointPos << "_" << PointPos << "fixp";
     return stm.str();
   };
   
