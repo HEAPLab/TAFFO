@@ -52,6 +52,10 @@ public:
   virtual std::string toString() const {
     return "TType";
   };
+  
+  virtual bool operator ==(const TType &b) const {
+    return Kind == b.Kind;
+  }
 
   TTypeKind getKind() const { return Kind; }
 private:
@@ -94,6 +98,13 @@ public:
     stm << std::abs(Width) << "_" << PointPos << "fixp";
     return stm.str();
   };
+  
+  virtual bool operator ==(const TType &b) const override {
+    if (!TType::operator==(b))
+      return false;
+    const FPType *b2 = llvm::cast<FPType>(&b);
+    return Width == b2->Width && PointPos == b2->PointPos;
+  }
 
   static bool classof(const TType *T) { return T->getKind() == K_FPType; }
 protected:
