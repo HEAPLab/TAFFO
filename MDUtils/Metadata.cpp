@@ -66,6 +66,27 @@ retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<MDInfo *> &ResII) {
 }
 
 void MetadataManager::
+setMDInfoMetadata(llvm::Value *u, const MDInfo *mdinfo) {
+  StringRef mdid;
+  
+  if (isa<InputInfo>(mdinfo)) {
+    mdid = INPUT_INFO_METADATA;
+  } else if (isa<StructInfo>(mdinfo)) {
+    mdid = STRUCT_INFO_METADATA;
+  } else{
+    assert(false && "unknown MDInfo class");
+  }
+  
+  if (Instruction *instr = dyn_cast<Instruction>(u)) {
+    instr->setMetadata(mdid, mdinfo->toMetadata(u->getContext()));
+  } else if (GlobalObject *go = dyn_cast<GlobalObject>(u)) {
+    go->setMetadata(mdid, mdinfo->toMetadata(u->getContext()));
+  } else {
+    assert(false && "parameter not an instruction or a global object");
+  }
+}
+
+void MetadataManager::
 setInputInfoMetadata(Instruction &I, const InputInfo &IInfo) {
   I.setMetadata(INPUT_INFO_METADATA, IInfo.toMetadata(I.getContext()));
 }

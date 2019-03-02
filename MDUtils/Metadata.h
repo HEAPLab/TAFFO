@@ -60,6 +60,8 @@ public:
   /// Fill vector ResII with the InputInfo for F's parameters retrieved from F's metadata.
   void retrieveArgumentInputInfo(const llvm::Function &F,
 				 llvm::SmallVectorImpl<MDInfo *> &ResII);
+  
+  static void setMDInfoMetadata(llvm::Value *u, const MDInfo *mdinfo);
 
   /// Attach to Instruction I an input info metadata node
   /// containing Type info T, Range, and initial Error.
