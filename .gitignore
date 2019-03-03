@@ -35,4 +35,5 @@ dist
 *.magiclangtmp.s
 .vscode
 *.out
-test/simple-test-cases/recompile-all.log
+test/simple-test-cases/*.log
+working-dist

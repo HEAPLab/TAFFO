@@ -25,6 +25,25 @@ MetadataManager& MetadataManager::getMetadataManager() {
   return Instance;
 }
 
+MDInfo *MetadataManager::retrieveMDInfo(const Value *v) {
+  if (const Instruction *i = dyn_cast<Instruction>(v)) {
+    if (MDNode *mdn = i->getMetadata(INPUT_INFO_METADATA)) {
+      return retrieveInputInfo(mdn).get();
+    } else if (MDNode *mdn = i->getMetadata(STRUCT_INFO_METADATA)) {
+      return retrieveStructInfo(mdn).get();
+    } else
+      return nullptr;
+  } else if (const GlobalObject *go = dyn_cast<GlobalObject>(v)) {
+    if (MDNode *mdn = go->getMetadata(INPUT_INFO_METADATA)) {
+      return retrieveInputInfo(mdn).get();
+    } else if (MDNode *mdn = go->getMetadata(STRUCT_INFO_METADATA)) {
+      return retrieveStructInfo(mdn).get();
+    } else
+      return nullptr;
+  }
+  return nullptr;
+}
+
 InputInfo* MetadataManager::retrieveInputInfo(const Instruction &I) {
   return retrieveInputInfo(I.getMetadata(INPUT_INFO_METADATA)).get();
 }

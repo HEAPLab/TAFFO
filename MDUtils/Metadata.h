@@ -50,17 +50,28 @@ namespace mdutils {
 class MetadataManager {
 public:
   static MetadataManager& getMetadataManager();
+  
+  ///\section Input Info & Struct Info
 
+  /// Retrieve the MDInfo associated to the given value.
+  MDInfo *retrieveMDInfo(const llvm::Value *v);
+  
   /// Get the Input Info (Type, Range, Initial Error) attached to I.
   InputInfo* retrieveInputInfo(const llvm::Instruction &I);
 
   /// Get the Input Info (Type, Range, Initial Error) attached to Global Variable V.
   InputInfo* retrieveInputInfo(const llvm::GlobalObject &V);
+  
+  /// Get the StructInfo attached to an Instruction or GlobalVariable.
+  StructInfo* retrieveStructInfo(const llvm::Instruction &I);
+  StructInfo* retrieveStructInfo(const llvm::GlobalObject &V);
 
   /// Fill vector ResII with the InputInfo for F's parameters retrieved from F's metadata.
   void retrieveArgumentInputInfo(const llvm::Function &F,
 				 llvm::SmallVectorImpl<MDInfo *> &ResII);
   
+  
+  /// Attach to value u the specified MDInfo node.
   static void setMDInfoMetadata(llvm::Value *u, const MDInfo *mdinfo);
 
   /// Attach to Instruction I an input info metadata node
@@ -71,6 +82,11 @@ public:
   /// IInfo contains pointers to type, range and initial error
   /// to be attached to global object V as metadata.
   static void setInputInfoMetadata(llvm::GlobalObject &V, const InputInfo &IInfo);
+  
+  /// Attach metadata containing field-wise Input Info for an Instruction
+  /// or GlobalVariable of a struct type.
+  static void setStructInfoMetadata(llvm::Instruction &I, const StructInfo &SInfo);
+  static void setStructInfoMetadata(llvm::GlobalObject &V, const StructInfo &SInfo);
 
   /// Attach metadata containing types, ranges and initial absolute errors
   /// for each argument of the given function.
@@ -80,14 +96,8 @@ public:
   static void setArgumentInputInfoMetadata(llvm::Function &F,
 					   const llvm::ArrayRef<MDInfo *> AInfo);
 
-  /// Get the StructInfo attached to an Instruction or GlobalVariable.
-  StructInfo* retrieveStructInfo(const llvm::Instruction &I);
-  StructInfo* retrieveStructInfo(const llvm::GlobalObject &V);
 
-  /// Attach metadata containing field-wise Input Info for an Instruction
-  /// or GlobalVariable of a struct type.
-  static void setStructInfoMetadata(llvm::Instruction &I, const StructInfo &SInfo);
-  static void setStructInfoMetadata(llvm::GlobalObject &V, const StructInfo &SInfo);
+  ///\section Error Propagation Metadata
 
   /// Attach MaxRecursionCount to the given function.
   /// Attaches metadata containing the maximum number of recursive calls
@@ -110,7 +120,7 @@ public:
   static void
   setLoopUnrollCountMetadata(llvm::Function &F,
 			     const llvm::SmallVectorImpl<llvm::Optional<unsigned> > &LUCs);
-
+  
   /// Read loop unroll count from metadata attached to the header of L.
   static llvm::Optional<unsigned>
   retrieveLoopUnrollCount(const llvm::Loop &L, llvm::LoopInfo *LI = nullptr);
