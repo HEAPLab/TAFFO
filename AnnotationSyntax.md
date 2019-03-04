@@ -72,7 +72,7 @@ elements are irrelevant, and they are optionally separed by any amount of whites
 Example:
 
 ```
-target("accum") backtracking scalar()
+target('accum') backtracking scalar()
 ```
 
 ## Top-Level Attributes
