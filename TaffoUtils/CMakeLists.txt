@@ -7,6 +7,8 @@ add_library(TaffoUtils
   InputInfo.cpp
   Metadata.h
   InputInfo.h
+  TypeUtils.h
+  TypeUtils.cpp
 )
 
 set_property(TARGET TaffoUtils PROPERTY CXX_STANDARD 11)
