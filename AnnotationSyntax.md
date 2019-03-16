@@ -189,3 +189,11 @@ error(<real>)
 
 The `error` keyword specifies the initial error that the Error Propagation pass assumes
 for the variable.
+
+### *disabled*
+
+```
+disabled
+```
+
+The `disabled` keyword specifies that this data item should not be modified by Conversion even though it is annotated.
