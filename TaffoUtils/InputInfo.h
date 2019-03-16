@@ -18,6 +18,8 @@
 
 #include <memory>
 #include <sstream>
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Type.h"
@@ -233,17 +235,21 @@ public:
    *  LLVM Type. All non-struct struct members are set to nullptr.
    *  @returns Either a StructInfo, or nullptr if the type does not
    *    contain any structure. */
-  static std::shared_ptr<StructInfo> constructFromLLVMType(llvm::Type *t) {
+  static std::shared_ptr<StructInfo> constructFromLLVMType(llvm::Type *t, int rl = 0) {
+    assert(rl < 25 && "FIXME too much recursion");
     int c = t->getNumContainedTypes();
     if (c == 0)
       return nullptr;
+    if (t->isFunctionTy())
+      return nullptr;
     if (t->isStructTy()) {
       FieldsType fields;
-      for (int i=0; i<c; i++)
-        fields.push_back(StructInfo::constructFromLLVMType(t->getContainedType(i)));
+      for (int i=0; i<c; i++) {
+        fields.push_back(StructInfo::constructFromLLVMType(t->getContainedType(i), rl+1));
+      }
       return std::make_shared<StructInfo>(StructInfo(fields));
     }
-    return StructInfo::constructFromLLVMType(t->getContainedType(0));
+    return StructInfo::constructFromLLVMType(t->getContainedType(0), rl+1);
   }
   
   std::shared_ptr<MDInfo> resolveFromIndexList(llvm::Type *type, llvm::ArrayRef<unsigned> indices) {
