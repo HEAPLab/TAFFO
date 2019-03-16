@@ -5,7 +5,7 @@
 The input information associated to a variable takes the form of a metadata node formatted as follows:
  
 ```
-!n = !{type, range, initialError}
+!n = !{type, range, initialError, convertible}
 ```
 
 Each item of the metadata tuple can be either a link to another metadata tuple or the integer zero (`i1 false`) in case a specific information does not apply.
@@ -51,6 +51,10 @@ The ``initialError`` subnode, if present, specifies a priori an error value for 
 ```
 !n = !{double Error}
 ```
+
+### ``convertible`` Subnode
+
+The ``convertible`` subnode is always present, and it specifies if the value being annotated should be processed by Conversion in order to change its type. It is always a boolean constant.
 
 ### Associating Input Information to IR nodes
 

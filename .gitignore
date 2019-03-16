@@ -37,3 +37,4 @@ dist
 *.out
 test/simple-test-cases/*.log
 working-dist
+test/simple-test-cases-FOR-REGRESSION

@@ -159,18 +159,22 @@ struct InputInfo : public MDInfo {
   std::shared_ptr<TType> IType;
   std::shared_ptr<Range> IRange;
   std::shared_ptr<double> IError;
+  bool IEnableConversion;
 
   InputInfo()
-    : MDInfo(K_Field), IType(nullptr), IRange(nullptr), IError(nullptr) {}
+    : MDInfo(K_Field), IType(nullptr), IRange(nullptr), IError(nullptr), IEnableConversion(false) {}
 
   InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error)
-    : MDInfo(K_Field), IType(T), IRange(R), IError(Error) {}
+    : MDInfo(K_Field), IType(T), IRange(R), IError(Error), IEnableConversion(false) {}
+  
+  InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error, bool EnC)
+    : MDInfo(K_Field), IType(T), IRange(R), IError(Error), IEnableConversion(EnC) {}
   
   virtual MDInfo *clone() const override {
     std::shared_ptr<TType> NewIType(IType.get() ? IType->clone() : nullptr);
     std::shared_ptr<Range> NewIRange(IRange.get() ? new Range(*IRange) : nullptr);
     std::shared_ptr<double> NewIError(IError.get() ? new double(*IError) : nullptr);
-    return new InputInfo(NewIType, NewIRange, NewIError);
+    return new InputInfo(NewIType, NewIRange, NewIError, IEnableConversion);
   }
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
@@ -181,6 +185,7 @@ struct InputInfo : public MDInfo {
     this->IType = O.IType;
     this->IRange = O.IRange;
     this->IError = O.IError;
+    this->IEnableConversion = O.IEnableConversion;
     return *this;
   };
   
@@ -199,6 +204,10 @@ struct InputInfo : public MDInfo {
     if (IError.get()) {
       if (!first) sstm << " ";
       sstm << "error(" << *IError << ")";
+    }
+    if (IEnableConversion) {
+      if (!first) sstm << " ";
+      sstm << "convertible";
     }
     sstm << ")";
     return sstm.str();

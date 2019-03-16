@@ -434,7 +434,7 @@ std::shared_ptr<StructInfo> MetadataManager::retrieveStructInfo(MDNode *MDN) {
 std::unique_ptr<InputInfo> MetadataManager::
 createInputInfoFromMetadata(MDNode *MDN) {
   assert(MDN != nullptr);
-  assert(MDN->getNumOperands() == 3U && "Must have Type, Range, Initial Error.");
+  assert(MDN->getNumOperands() > 3U && "Must have at least Type, Range, Initial Error");
 
   Metadata *ITypeMDN = MDN->getOperand(0U).get();
   std::shared_ptr<TType> IType = (IsNullInputInfoField(ITypeMDN))
@@ -447,8 +447,16 @@ createInputInfoFromMetadata(MDNode *MDN) {
   Metadata *IErrorMDN = MDN->getOperand(2U).get();
   std::shared_ptr<double> IError = (IsNullInputInfoField(IErrorMDN))
     ? nullptr : retrieveError(cast<MDNode>(IErrorMDN));
+  
+  Metadata *IEnabledMDN = MDN->getOperand(3U).get();
+  bool IEnabled = false;
+  if (IEnabledMDN) {
+    ConstantAsMetadata *tmpmd = cast<ConstantAsMetadata>(IEnabledMDN);
+    ConstantInt *tmpint = cast<ConstantInt>(tmpmd->getValue());
+    IEnabled = tmpint->getZExtValue();
+  }
 
-  return std::unique_ptr<InputInfo>(new InputInfo(IType, IRange, IError));
+  return std::unique_ptr<InputInfo>(new InputInfo(IType, IRange, IError, IEnabled));
 }
 
 std::unique_ptr<StructInfo> MetadataManager::
