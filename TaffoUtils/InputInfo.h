@@ -244,21 +244,36 @@ public:
    *  LLVM Type. All non-struct struct members are set to nullptr.
    *  @returns Either a StructInfo, or nullptr if the type does not
    *    contain any structure. */
-  static std::shared_ptr<StructInfo> constructFromLLVMType(llvm::Type *t, int rl = 0) {
-    assert(rl < 25 && "FIXME too much recursion");
+  static std::shared_ptr<StructInfo> constructFromLLVMType(llvm::Type *t, llvm::SmallDenseMap<llvm::Type *, std::shared_ptr<StructInfo>> *recursionMap = nullptr) {
+    std::unique_ptr<llvm::SmallDenseMap<llvm::Type *, std::shared_ptr<StructInfo>>> _recursionMap;
+    if (!recursionMap) {
+      _recursionMap.reset(new llvm::SmallDenseMap<llvm::Type *, std::shared_ptr<StructInfo>>());
+      recursionMap = _recursionMap.get();
+    }
+    
+    auto rec = recursionMap->find(t);
+    if (rec != recursionMap->end()) {
+      return rec->getSecond();
+    }
+    
     int c = t->getNumContainedTypes();
-    if (c == 0)
+    
+    if (c == 0 || t->isFunctionTy()) {
+      recursionMap->insert({t, nullptr});
       return nullptr;
-    if (t->isFunctionTy())
-      return nullptr;
+    }
+    
     if (t->isStructTy()) {
       FieldsType fields;
+      std::shared_ptr<StructInfo> res = std::make_shared<StructInfo>(StructInfo(c));
+      recursionMap->insert({t, res});
       for (int i=0; i<c; i++) {
-        fields.push_back(StructInfo::constructFromLLVMType(t->getContainedType(i), rl+1));
+        res->getField(i) = StructInfo::constructFromLLVMType(t->getContainedType(i), recursionMap);
       }
-      return std::make_shared<StructInfo>(StructInfo(fields));
+      return res;
     }
-    return StructInfo::constructFromLLVMType(t->getContainedType(0), rl+1);
+    
+    return StructInfo::constructFromLLVMType(t->getContainedType(0), recursionMap);
   }
   
   std::shared_ptr<MDInfo> resolveFromIndexList(llvm::Type *type, llvm::ArrayRef<unsigned> indices) {
