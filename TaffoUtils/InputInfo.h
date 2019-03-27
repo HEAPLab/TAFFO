@@ -148,6 +148,8 @@ public:
   virtual std::string toString() const {
     return "MDInfo";
   };
+  
+  virtual bool getEnableConversion() const = 0;
 
 private:
   const MDInfoKind Kind;
@@ -212,6 +214,10 @@ struct InputInfo : public MDInfo {
     sstm << ")";
     return sstm.str();
   };
+  
+  bool getEnableConversion() const override {
+    return IEnableConversion;
+  };
 
   static bool classof(const MDInfo *M) { return M->getKind() == K_Field; }
 };
@@ -220,6 +226,24 @@ class StructInfo : public MDInfo {
 private:
   typedef llvm::SmallVector<std::shared_ptr<MDInfo>, 4U> FieldsType;
   FieldsType Fields;
+  
+  bool _getEnableConversion(llvm::SmallPtrSetImpl<const StructInfo *>& visited) const {
+    visited.insert(this);
+    for (auto field: Fields) {
+      if (!field.get())
+        continue;
+      if (StructInfo *si = llvm::dyn_cast<StructInfo>(field.get())) {
+        if (visited.count(si) > 0)
+          continue;
+        if (si->_getEnableConversion(visited))
+          return true;
+      } else {
+        if (field->getEnableConversion())
+          return true;
+      }
+    }
+    return false;
+  };
 
 public:
   typedef FieldsType::iterator iterator;
@@ -319,6 +343,11 @@ public:
     }
     sstm << ")";
     return sstm.str();
+  };
+  
+  bool getEnableConversion() const override {
+    llvm::SmallPtrSet<const StructInfo *, 1> visited;
+    return _getEnableConversion(visited);
   };
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
