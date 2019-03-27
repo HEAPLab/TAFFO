@@ -262,6 +262,7 @@ public:
   const_iterator end() const { return Fields.end(); }
   size_type size() const { return Fields.size(); }
   MDInfo *getField(size_type I) const { return Fields[I].get(); }
+  void setField(size_type I, std::shared_ptr<MDInfo> F) { Fields[I] = F; }
   std::shared_ptr<MDInfo> getField(size_type I) { return Fields[I]; }
   
   /** Builds a StructInfo with the recursive structure of the specified
