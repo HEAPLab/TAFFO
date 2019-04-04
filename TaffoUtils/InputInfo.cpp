@@ -40,8 +40,8 @@ bool FPType::isFPTypeMetadata(MDNode *MDN) {
   if (MDN->getNumOperands() < 1)
     return false;
 
-  MDString *Flag = cast<MDString>(MDN->getOperand(0U).get());
-  return Flag->getString().equals(FIXP_TYPE_FLAG);
+  MDString *Flag = dyn_cast<MDString>(MDN->getOperand(0U).get());
+  return Flag && Flag->getString().equals(FIXP_TYPE_FLAG);
 }
 
 std::unique_ptr<FPType> FPType::createFromMetadata(MDNode *MDN) {
@@ -175,7 +175,7 @@ MDNode *InputInfo::toMetadata(LLVMContext &C) const {
 
 bool InputInfo::isInputInfoMetadata(Metadata *MD) {
   MDNode *MDN = dyn_cast<MDNode>(MD);
-  if (MDN == nullptr || MDN->getNumOperands() != 4U)
+  if (MDN == nullptr || MDN->getNumOperands() > 4U || MDN->getNumOperands() < 3U)
     return false;
 
   Metadata *Op0 = MDN->getOperand(0U).get();
@@ -189,7 +189,7 @@ bool InputInfo::isInputInfoMetadata(Metadata *MD) {
   Metadata *Op2 = MDN->getOperand(2U).get();
   if (!(IsNullInputInfoField(Op2) || IsInitialErrorMetadata(Op2)))
     return false;
-  
+
   Metadata *Op3 = MDN->getOperand(3U).get();
   if (!(IsNullInputInfoField(Op3) || isa<ConstantAsMetadata>(Op3)))
     return false;
