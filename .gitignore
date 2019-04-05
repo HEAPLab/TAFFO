@@ -1,25 +1,6 @@
 build*
 .idea
 
-test/axbench/*/obj/
-test/axbench/*/bin/
-test/axbench/*/data/output
-test/axbench/*/stats/
-
-test/axbench/*/tmp.err
-test/axbench/*/tmp.log
-test/axbench/*/*.tmp
-
-test/axbench/raw-times
-test/axbench/results
-test/axbench/*_results
-test/axbench/*_results.zip
-
-test/axbench/kmeans/correct_output
-test/axbench/kmeans/src_before
-test/axbench/fft/orig_src
-test/axbench/blackscholes/orig_src
-
 test/polybench-c-4.2.1-beta/raw-times
 test/polybench-c-4.2.1-beta/raw-times-*
 test/polybench-c-4.2.1-beta/multiconf_results
