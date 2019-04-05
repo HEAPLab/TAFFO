@@ -9,3 +9,4 @@ add_subdirectory(Initializer)
 add_subdirectory(RangeAnalysis)
 
 add_subdirectory(TaffoUtils)
+add_subdirectory(LibVCSupport)
