@@ -188,8 +188,8 @@ setLoopUnrollCountMetadata(Loop &L, unsigned UnrollCount) {
   // Get Loop header terminating instruction
   BasicBlock *Header = L.getHeader();
   assert(Header && "Loop with no header.");
-
-  TerminatorInst *HTI = Header->getTerminator();
+  
+  Instruction *HTI = Header->getTerminator();
   assert(HTI && "Block with no terminator.");
 
   // Prepare MD Node
@@ -234,7 +234,7 @@ MetadataManager::retrieveLUCFromHeaderMD(const Loop &L) {
   BasicBlock *Header = L.getHeader();
   assert(Header && "Loop with no header.");
 
-  TerminatorInst *HTI = Header->getTerminator();
+  Instruction *HTI = Header->getTerminator();
   assert(HTI && "Block with no terminator.");
 
   MDNode *UCNode = HTI->getMetadata(UNROLL_COUNT_METADATA);
