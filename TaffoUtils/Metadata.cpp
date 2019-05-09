@@ -161,6 +161,40 @@ void MetadataManager::setStructInfoMetadata(GlobalObject &V, const StructInfo &S
   V.setMetadata(STRUCT_INFO_METADATA, SInfo.toMetadata(V.getContext()));
 }
 
+
+void MetadataManager::setInputInfoInitWeightMetadata(Value *v, int weight)
+{
+  assert(isa<Instruction>(v) || isa<GlobalObject>(v) && "v not an instruction or a global object");
+  ConstantInt *cweight = ConstantInt::get(IntegerType::getInt32Ty(v->getContext()), weight);
+  ConstantAsMetadata *mdweight = ConstantAsMetadata::get(cweight);
+  if (Instruction *i = dyn_cast<Instruction>(v)) {
+    i->setMetadata(INIT_WEIGHT_METADATA, MDNode::get(v->getContext(), mdweight));
+  } else if (GlobalObject *go = dyn_cast<GlobalObject>(v)) {
+    go->setMetadata(INIT_WEIGHT_METADATA, MDNode::get(v->getContext(), mdweight));
+  }
+}
+
+
+int MetadataManager::retrieveInputInfoInitWeightMetadata(const Value *v)
+{
+  MDNode *node;
+  if (const Instruction *i = dyn_cast<Instruction>(v)) {
+    node = i->getMetadata(INIT_WEIGHT_METADATA);
+  } else if (const GlobalObject *go = dyn_cast<GlobalObject>(v)) {
+    node = go->getMetadata(INIT_WEIGHT_METADATA);
+  } else {
+    return INT_MAX;
+  }
+  if (!node)
+    return -1;
+  assert(node->getNumOperands() == 1 && "malformed " INIT_WEIGHT_METADATA " metadata node");
+  ConstantAsMetadata *mdweight = cast<ConstantAsMetadata>(node->getOperand(0U));
+  ConstantInt *cweight = cast<ConstantInt>(mdweight->getValue());
+  return cweight->getZExtValue();
+}
+
+
+
 void MetadataManager::
 setMaxRecursionCountMetadata(Function &F, unsigned MaxRecursionCount) {
   ConstantInt *CIRC = ConstantInt::get(Type::getInt32Ty(F.getContext()),

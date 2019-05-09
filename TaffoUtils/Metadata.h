@@ -41,6 +41,11 @@
 #define CLONED_FUN_METADATA    "taffo.equivalentChild"
 #define SOURCE_FUN_METADATA    "taffo.sourceFunction"
 
+/* Integer which specifies the distance of the metadata from the
+ * original annotation as data flow node counts.
+ * Used by VRA to determine the metadata to use as a starting point. */
+#define INIT_WEIGHT_METADATA   "taffo.initweight"
+
 namespace mdutils {
 
 /// Class that converts LLVM Metadata into the in.memory representation.
@@ -95,6 +100,13 @@ public:
   /// Each InputInfo object refers to the function parameter with the same index.
   static void setArgumentInputInfoMetadata(llvm::Function &F,
 					   const llvm::ArrayRef<MDInfo *> AInfo);
+  
+  
+  ///\section Init Metadata
+  
+  static void setInputInfoInitWeightMetadata(llvm::Value *v, int weight);
+  
+  int retrieveInputInfoInitWeightMetadata(const llvm::Value *v);
 
 
   ///\section Error Propagation Metadata
