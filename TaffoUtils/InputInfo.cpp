@@ -175,7 +175,7 @@ MDNode *InputInfo::toMetadata(LLVMContext &C) const {
 
 bool InputInfo::isInputInfoMetadata(Metadata *MD) {
   MDNode *MDN = dyn_cast<MDNode>(MD);
-  if (MDN == nullptr || MDN->getNumOperands() > 4U || MDN->getNumOperands() < 3U)
+  if (MDN == nullptr || MDN->getNumOperands() != 4U)
     return false;
 
   Metadata *Op0 = MDN->getOperand(0U).get();
