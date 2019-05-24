@@ -193,7 +193,37 @@ int MetadataManager::retrieveInputInfoInitWeightMetadata(const Value *v)
   return cweight->getZExtValue();
 }
 
+void MetadataManager::setInputInfoInitWeightMetadata(llvm::Function *f,
+						     const llvm::ArrayRef<int> weights)
+{
+  SmallVector<Metadata *, 4U> wmds;
+  wmds.reserve(weights.size());
+  for (int w : weights) {
+    ConstantInt *cweight = ConstantInt::get(IntegerType::getInt32Ty(f->getContext()), w);
+    ConstantAsMetadata *mdweight = ConstantAsMetadata::get(cweight);
+    wmds.push_back(mdweight);
+  }
+  f->setMetadata(INIT_WEIGHT_METADATA, MDNode::get(f->getContext(), wmds));
+}
 
+void MetadataManager::retrieveInputInfoInitWeightMetadata(llvm::Function *f,
+							  llvm::SmallVectorImpl<int> &ResWs)
+{
+  MDNode *node = f->getMetadata(INIT_WEIGHT_METADATA);
+  if (!node)
+    return;
+
+  ResWs.reserve(f->arg_size());
+  for (unsigned i = 0; i < f->arg_size(); ++i) {
+    if (i < node->getNumOperands()) {
+      ConstantAsMetadata *mdweight = cast<ConstantAsMetadata>(node->getOperand(i));
+      ConstantInt *cweight = cast<ConstantInt>(mdweight->getValue());
+      ResWs.push_back(cweight->getZExtValue());
+    } else {
+      ResWs.push_back(-1);
+    }
+  }
+}
 
 void MetadataManager::
 setMaxRecursionCountMetadata(Function &F, unsigned MaxRecursionCount) {

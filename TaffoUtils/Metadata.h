@@ -105,9 +105,11 @@ public:
   ///\section Init Metadata
   
   static void setInputInfoInitWeightMetadata(llvm::Value *v, int weight);
-  
   int retrieveInputInfoInitWeightMetadata(const llvm::Value *v);
 
+  static void setInputInfoInitWeightMetadata(llvm::Function *f, const llvm::ArrayRef<int> weights);
+  static void retrieveInputInfoInitWeightMetadata(llvm::Function *f,
+						  llvm::SmallVectorImpl<int> &ResWs);
 
   ///\section Error Propagation Metadata
 
