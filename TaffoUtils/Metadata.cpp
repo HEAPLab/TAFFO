@@ -141,6 +141,8 @@ setArgumentInputInfoMetadata(Function &F, const ArrayRef<MDInfo *> AInfo) {
     AllArgsMD.push_back(mdtid);
     AllArgsMD.push_back(val);
   }
+  
+  assert(AllArgsMD.size() / 2 == F.getFunctionType()->getNumParams() && "writing malformed funinfo");
 
   F.setMetadata(FUNCTION_ARGS_METADATA, MDNode::get(Context, AllArgsMD));
 }
