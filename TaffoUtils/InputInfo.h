@@ -162,21 +162,22 @@ struct InputInfo : public MDInfo {
   std::shared_ptr<Range> IRange;
   std::shared_ptr<double> IError;
   bool IEnableConversion;
+  bool IFinal;
 
   InputInfo()
-    : MDInfo(K_Field), IType(nullptr), IRange(nullptr), IError(nullptr), IEnableConversion(false) {}
+    : MDInfo(K_Field), IType(nullptr), IRange(nullptr), IError(nullptr), IEnableConversion(false), IFinal(false) {}
 
   InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error)
-    : MDInfo(K_Field), IType(T), IRange(R), IError(Error), IEnableConversion(false) {}
-  
-  InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error, bool EnC)
-    : MDInfo(K_Field), IType(T), IRange(R), IError(Error), IEnableConversion(EnC) {}
-  
+    : MDInfo(K_Field), IType(T), IRange(R), IError(Error), IEnableConversion(false), IFinal(false) {}
+
+  InputInfo(std::shared_ptr<TType> T, std::shared_ptr<Range> R, std::shared_ptr<double> Error, bool EnC, bool IsFinal = false)
+    : MDInfo(K_Field), IType(T), IRange(R), IError(Error), IEnableConversion(EnC), IFinal(IsFinal) {}
+
   virtual MDInfo *clone() const override {
     std::shared_ptr<TType> NewIType(IType.get() ? IType->clone() : nullptr);
     std::shared_ptr<Range> NewIRange(IRange.get() ? new Range(*IRange) : nullptr);
     std::shared_ptr<double> NewIError(IError.get() ? new double(*IError) : nullptr);
-    return new InputInfo(NewIType, NewIRange, NewIError, IEnableConversion);
+    return new InputInfo(NewIType, NewIRange, NewIError, IEnableConversion, IFinal);
   }
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
@@ -188,9 +189,10 @@ struct InputInfo : public MDInfo {
     this->IRange = O.IRange;
     this->IError = O.IError;
     this->IEnableConversion = O.IEnableConversion;
+    this->IFinal = O.IFinal;
     return *this;
   };
-  
+
   virtual std::string toString() const override {
     std::stringstream sstm;
     sstm << "scalar(";
@@ -211,13 +213,19 @@ struct InputInfo : public MDInfo {
       if (!first) sstm << " ";
       sstm << "convertible";
     }
+    if (IFinal) {
+      if (!first) sstm << " ";
+      sstm << "final";
+    }
     sstm << ")";
     return sstm.str();
   };
-  
+
   bool getEnableConversion() const override {
     return IEnableConversion;
   };
+
+  bool isFinal() const { return IFinal; }
 
   static bool classof(const MDInfo *M) { return M->getKind() == K_Field; }
 };

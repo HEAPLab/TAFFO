@@ -166,10 +166,11 @@ MDNode *InputInfo::toMetadata(LLVMContext &C) const {
   Metadata *TypeMD = (IType) ? IType->toMetadata(C) : Null;
   Metadata *RangeMD = (IRange) ? IRange->toMetadata(C) : Null;
   Metadata *ErrorMD = (IError) ? InitialErrorToMetadata(C, *IError) : Null;
-  Metadata *EnCMD = ConstantAsMetadata::get(
-    ConstantInt::getIntegerValue(Type::getInt1Ty(C), APInt(1, IEnableConversion)));
 
-  Metadata *InputMDs[] = {TypeMD, RangeMD, ErrorMD, EnCMD};
+  uint64_t Flags = IEnableConversion | (IFinal << 1);
+  Metadata *FlagsMD = ConstantAsMetadata::get(ConstantInt::get(Type::getIntNTy(C, 2U), Flags));
+
+  Metadata *InputMDs[] = {TypeMD, RangeMD, ErrorMD, FlagsMD};
   return MDNode::get(C, InputMDs);
 }
 
