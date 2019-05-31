@@ -40,6 +40,11 @@ MDInfo *MetadataManager::retrieveMDInfo(const Value *v) {
       return retrieveStructInfo(mdn).get();
     } else
       return nullptr;
+  } else if (const Argument *arg = dyn_cast<Argument>(v)) {
+    const Function *fun = arg->getParent();
+    llvm::SmallVector<MDInfo *, 2> famd;
+    retrieveArgumentInputInfo(*fun, famd);
+    return famd[arg->getArgNo()];
   }
   return nullptr;
 }
