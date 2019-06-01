@@ -122,6 +122,12 @@ public:
   Range() : Min(0.0), Max(0.0) {}
   Range(double Min, double Max) : Min(Min), Max(Max) {}
   Range(Range& r) : Min(r.Min), Max(r.Max) {}
+  
+  std::string toString() const {
+    std::stringstream sstm;
+    sstm << "[" << Min << ", " << Max << "]";
+    return sstm.str();
+  }
 
   llvm::MDNode *toMetadata(llvm::LLVMContext &C) const;
   static std::unique_ptr<Range> createFromMetadata(llvm::MDNode *MDN);
