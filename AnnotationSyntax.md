@@ -197,3 +197,12 @@ disabled
 ```
 
 The `disabled` keyword specifies that this data item should not be modified by Conversion even though it is annotated.
+
+### *final*
+
+```
+final
+```
+
+The `final` keyword prevents the value range analysis stage from widening the initial range supplied for this variable.
+Note that this can be done as far as TAFFO is able to keep track of the annotated variable in LLVM IR, so this works best for arrays and structs.
