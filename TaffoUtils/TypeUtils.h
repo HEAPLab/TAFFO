@@ -21,6 +21,22 @@ enum class FixedPointTypeGenError {
   NotEnoughIntAndFracBits
 };
 
+/** Generate a fixed point type appropriate for storing values
+ *  contained in a given range
+ *  @param range The range of values for which the type will be used
+ *  @param outerr Pointer to a FixedPointTypeGenError which will be set
+ *    to a value depending on the outcome of the type assignment.
+ *    Optionally can be nullptr.
+ *  @param totalBits The minimum amount of bits in the type
+ *  @param fracThreshold The minimum amount of fractional bits in the
+ *    type. If negative, the lowest amount of fractional bits that won't
+ *    increase the quantization error will be chosen (at the moment,
+ *    this is only relevant for zero-span ranges)
+ *  @param maxTotalBits The maximum amount of bits in the type
+ *  @param totalBitsIncrement The minimum amount of increment in the total
+ *    amount of allocated bits to use when the range is too large for
+ *    the minimum amount of bits.
+ *  @returns A fixed point type. */
 mdutils::FPType fixedPointTypeFromRange(
   const mdutils::Range& range,
   FixedPointTypeGenError *outerr=nullptr,

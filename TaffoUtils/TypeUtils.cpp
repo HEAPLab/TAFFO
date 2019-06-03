@@ -53,7 +53,23 @@ mdutils::FPType taffo::fixedPointTypeFromRange(
   double max = std::max(std::abs(rng.Min), std::abs(rng.Max));
   int intBit = std::lround(std::ceil(std::log2(max+1.0))) + (isSigned ? 1 : 0);
   int bitsAmt = totalBits;
-  int fracBitsAmt = bitsAmt - intBit;
+  
+  int maxFracBitsAmt;
+  if (rng.Min == rng.Max && fracThreshold < 0) {
+    int exp;
+    double mant = std::frexp(max, &exp);
+    // rng.Min == rng.Max == mant * (2 ** exp)
+    int nonzerobits = 0;
+    while (mant != 0) {
+      nonzerobits += 1;
+      mant = mant * 2 - trunc(mant * 2);
+    }
+    maxFracBitsAmt = std::max(0, -exp + nonzerobits);
+  } else {
+    maxFracBitsAmt = INT_MAX;
+  }
+  int fracBitsAmt = std::min(bitsAmt - intBit, maxFracBitsAmt);
+  
   while (fracBitsAmt < fracThreshold && bitsAmt < maxTotalBits) {
     bitsAmt += totalBitsIncrement;
     fracBitsAmt = bitsAmt - intBit;
