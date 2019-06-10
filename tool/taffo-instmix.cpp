@@ -20,7 +20,7 @@
 using namespace llvm;
 
 
-cl::OptionCategory IstrFreqOptions("istr_type options");
+cl::OptionCategory TAFFOInstMixOptions("taffo-instmix options");
 cl::opt<bool> Verbose("verbose", cl::value_desc("verbose"),
   cl::desc("Enable Verbose Output"),
   cl::init(false));
