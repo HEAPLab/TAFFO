@@ -33,6 +33,8 @@ llvm_map_components_to_libnames(llvm_libs
 
 add_executable(taffo-instmix
   taffo-instmix.cpp
+  InstructionMix.h
+  InstructionMix.cpp
 )
 target_link_libraries(taffo-instmix ${llvm_libs})
 set_property(TARGET taffo-instmix PROPERTY CXX_STANDARD 11)
@@ -44,6 +46,8 @@ install(TARGETS taffo-instmix DESTINATION bin)
 
 add_executable(taffo-mlfeat
   taffo-mlfeat.cpp
+  InstructionMix.h
+  InstructionMix.cpp
   TaffoMLFeaturesAnalysis.cpp
   TaffoMLFeaturesAnalysis.h
 )

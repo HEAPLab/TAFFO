@@ -16,6 +16,7 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/raw_os_ostream.h"
+#include "InstructionMix.h"
 
 using namespace llvm;
 
@@ -39,11 +40,11 @@ struct block_eval_status {
 };
 
 
-bool analyze_function(Function *, std::unordered_set<BasicBlock *>&, std::map<std::string, int>&, int &, int &);
-void analyze_basic_block(BasicBlock *, std::unordered_set<BasicBlock *>&, std::map<std::string, int>&, int &, int &);
+bool analyze_function(InstructionMix&, Function *, std::unordered_set<BasicBlock *>&, int &);
+void analyze_basic_block(InstructionMix&, BasicBlock *, std::unordered_set<BasicBlock *>&, int &);
 
 
-void analyze_basic_block(BasicBlock *bb, std::unordered_set<BasicBlock *>& countedbbs, std::map<std::string, int>& stat, int &eval, int &ninstr)
+void analyze_basic_block(InstructionMix& imix, BasicBlock *bb, std::unordered_set<BasicBlock *>& countedbbs, int &eval)
 {
   if (Verbose) {
     raw_os_ostream stm(std::cerr);
@@ -84,7 +85,7 @@ void analyze_basic_block(BasicBlock *bb, std::unordered_set<BasicBlock *>& count
                  opnd->getIntrinsicID() == Intrinsic::ID::ptr_annotation) {
         continue;
       } else {
-        bool success = analyze_function(opnd, countedbbs, stat, eval, ninstr);
+        bool success = analyze_function(imix, opnd, countedbbs, eval);
         if (success && !CountCallSite)
           continue;
       }
@@ -93,53 +94,14 @@ void analyze_basic_block(BasicBlock *bb, std::unordered_set<BasicBlock *>& count
     if (!eval)
       continue;
     
-    ninstr++;
-    stat[inst.getOpcodeName()]++;
-
-    if (isa<AllocaInst>(inst) || isa<LoadInst>(inst) || isa<StoreInst>(inst) || isa<GetElementPtrInst>(inst) ) {
-      stat["MemOp"]++;
-    } else if (isa<PHINode>(inst) || isa<SelectInst>(inst) || isa<FCmpInst>(inst) || isa<CmpInst>(inst) ) {
-      stat["CmpOp"]++;
-    } else if (isa<CastInst>(inst)) {
-      stat["CastOp"]++;
-    } else if (inst.isBinaryOp()) {
-      stat["MathOp"]++;
-      if (inst.getType()->isFloatingPointTy()) {
-        stat["FloatingPointOp"]++;
-        if (inst.getOpcode() == Instruction::FMul || inst.getOpcode() == Instruction::FDiv)
-          stat["FloatMulDivOp"]++;
-      } else
-        stat["IntegerOp"]++;
-    }
-    if (inst.isShift()) {
-      stat["Shift"]++;
-    }
-    
-    if (call || invoke) {
-      std::stringstream stm;
-      
-      if (call) {
-        stm << "call(";
-      } else {
-        stm << "invoke(";
-      }
-      
-      if (opnd) {
-        stm << opnd->getName().str();
-      } else {
-        stm << "%indirect";
-      }
-      
-      stm << ")";
-      stat[stm.str()]++;
-    }
+    imix.updateWithInstruction(&inst);
   }
   
   return;
 }
 
 
-bool analyze_function(Function *f, std::unordered_set<BasicBlock *>& countedbbs, std::map<std::string, int>& stat, int &eval, int &ninstr)
+bool analyze_function(InstructionMix& imix, Function *f, std::unordered_set<BasicBlock *>& countedbbs, int &eval)
 {
   if (Verbose)
     std::cerr << " Function: " << f->getName().str() << std::endl;
@@ -161,7 +123,7 @@ bool analyze_function(Function *f, std::unordered_set<BasicBlock *>& countedbbs,
     block_eval_status top = queue.front();
     queue.pop_front();
     
-    analyze_basic_block(top.block, countedbbs, stat, top.eval, ninstr);
+    analyze_basic_block(imix, top.block, countedbbs, top.eval);
     eval = top.eval;
     
     Instruction *term = top.block->getTerminator();
@@ -198,27 +160,18 @@ int main(int argc, char *argv[])
   }
 
   int eval = 0;
-  int ninstr = 0;
-  std::map<std::string, int> stat;
   std::unordered_set<BasicBlock *> bbs;
+  InstructionMix imix;
   
   Function *mainfunc = m->getFunction("main");
   if (!mainfunc) {
     std::cout << "No main function found!\n";
   } else {
-    analyze_function(mainfunc, bbs, stat, eval, ninstr);
+    analyze_function(imix, mainfunc, bbs, eval);
   }
 
-  for (auto iter1 = m->getFunctionList().begin();
-       iter1 != m->getFunctionList().end(); iter1++) {
-    Function &f = *iter1;
-    
-    if (f.getName() != "main")
-      continue;
-  }
-
-  std::cout << "* " << ninstr << std::endl;
-  for (auto it = stat.begin(); it != stat.end(); it++) {
+  std::cout << "* " << imix.ninstr << std::endl;
+  for (auto it = imix.stat.begin(); it != imix.stat.end(); it++) {
     std::cout << it->first << " " << it->second;
     std::cout << std::endl;
   }
