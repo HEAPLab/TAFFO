@@ -16,6 +16,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/Utils.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IRReader/IRReader.h"
@@ -92,6 +93,7 @@ int main(int argc, char *argv[])
   legacy::PassManager passManager;
   passManager.add(createAlwaysInlinerLegacyPass());
   passManager.add(createGlobalDCEPass());
+  passManager.add(createLoopSimplifyPass());
   passManager.run(*m);
   
   /* do the actual work; jump to TaffoMLFeatureAnalysisPass.cpp pls */

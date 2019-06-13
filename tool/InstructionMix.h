@@ -11,7 +11,7 @@ class InstructionMix
 {
 public:
   std::map<std::string, int> stat;
-  int ninstr;
+  int ninstr = 0;
   
   void updateWithInstruction(llvm::Instruction *instr);
 };

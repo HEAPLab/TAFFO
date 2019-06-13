@@ -51,7 +51,7 @@ add_executable(taffo-mlfeat
   TaffoMLFeaturesAnalysis.cpp
   TaffoMLFeaturesAnalysis.h
 )
-target_link_libraries(taffo-mlfeat ${llvm_libs})
+target_link_libraries(taffo-mlfeat ${llvm_libs} TaffoUtils)
 set_property(TARGET taffo-mlfeat PROPERTY CXX_STANDARD 11)
 set_property(TARGET taffo-mlfeat PROPERTY CXX_STANDARD_REQUIRED ON)
 if (NOT LLVM_ENABLE_RTTI)
