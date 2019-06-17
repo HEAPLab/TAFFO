@@ -14,7 +14,11 @@ public:
   int ninstr = 0;
   
   void updateWithInstruction(llvm::Instruction *instr);
+  
 };
+
+int isDelimiterInstruction(llvm::Instruction *instr);
+bool isSkippableInstruction(llvm::Instruction *instr);
 
 
 #endif

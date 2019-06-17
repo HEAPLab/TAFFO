@@ -1,4 +1,5 @@
 #include <sstream>
+#include "llvm/IR/Intrinsics.h"
 #include "InstructionMix.h"
 
 using namespace llvm;
@@ -47,5 +48,52 @@ void InstructionMix::updateWithInstruction(Instruction *inst)
     stm << ")";
     stat[stm.str()]++;
   }
+}
+
+
+int isDelimiterInstruction(llvm::Instruction *instr)
+{
+  CallBase *call = dyn_cast<CallBase>(instr);
+  if (!call)
+    return 0;
+  Function *opnd = call->getCalledFunction();
+  if (!opnd)
+    return 0;
+
+  if (opnd->getName() == "polybench_timer_start" ||
+      opnd->getName() == "timer_start") {
+    return +1;
+  } else if (opnd->getName() == "polybench_timer_stop" ||
+             opnd->getName() == "timer_stop") {
+    return -1;
+  } else if (opnd->getName().contains("AxBenchTimer")) {
+    if (opnd->getName().contains("nanosecondsSinceInit")) {
+      return -1;
+    } else {
+      return +1;
+    }
+  }
+  return 0;
+}
+
+
+bool isSkippableInstruction(llvm::Instruction *instr)
+{
+  CallBase *call = dyn_cast<CallBase>(instr);
+  if (!call)
+    return false;
+  Function *opnd = call->getCalledFunction();
+  if (!opnd)
+    return false;
+  
+  if (opnd->getIntrinsicID() == Intrinsic::ID::annotation ||
+      opnd->getIntrinsicID() == Intrinsic::ID::var_annotation ||
+      opnd->getIntrinsicID() == Intrinsic::ID::ptr_annotation ||
+      opnd->getIntrinsicID() == Intrinsic::ID::dbg_addr ||
+      opnd->getIntrinsicID() == Intrinsic::ID::dbg_label ||
+      opnd->getIntrinsicID() == Intrinsic::ID::dbg_value ||
+      opnd->getIntrinsicID() == Intrinsic::ID::dbg_declare)
+    return true;
+  return false;
 }
 

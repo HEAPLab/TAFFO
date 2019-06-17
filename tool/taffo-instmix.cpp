@@ -56,39 +56,24 @@ void analyze_basic_block(InstructionMix& imix, BasicBlock *bb, std::unordered_se
   
   for (auto iter3 = bb->begin(); iter3 != bb->end(); iter3++) {
     Instruction &inst = *iter3;
+    
+    int delim = isDelimiterInstruction(&inst);
+    eval += delim;
+    if (delim > 0)
+      continue;
+    
+    if (isSkippableInstruction(&inst))
+      continue;
 
     Function *opnd = nullptr;
-    CallInst *call = dyn_cast<CallInst>(&inst);
+    CallBase *call = dyn_cast<CallBase>(&inst);
     if (call)
       opnd = call->getCalledFunction();
-    InvokeInst *invoke = dyn_cast<InvokeInst>(&inst);
-    if (invoke)
-      opnd = invoke->getCalledFunction();
     
     if (opnd) {
-      if (opnd->getName() == "polybench_timer_start" ||
-          opnd->getName() == "timer_start") {
-        eval++;
+      bool success = analyze_function(imix, opnd, countedbbs, eval);
+      if (success && !CountCallSite)
         continue;
-      } else if (opnd->getName() == "polybench_timer_stop" ||
-                 opnd->getName() == "timer_stop") {
-        eval--;
-      } else if (opnd->getName().contains("AxBenchTimer")) {
-        if (opnd->getName().contains("nanosecondsSinceInit")) {
-          eval--;
-        } else {
-          eval++;
-          continue;
-        }
-      } else if (opnd->getIntrinsicID() == Intrinsic::ID::annotation ||
-                 opnd->getIntrinsicID() == Intrinsic::ID::var_annotation ||
-                 opnd->getIntrinsicID() == Intrinsic::ID::ptr_annotation) {
-        continue;
-      } else {
-        bool success = analyze_function(imix, opnd, countedbbs, eval);
-        if (success && !CountCallSite)
-          continue;
-      }
     }
 
     if (!eval)
