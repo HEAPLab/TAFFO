@@ -57,9 +57,19 @@ int isDelimiterInstruction(llvm::Instruction *instr)
   if (!call)
     return 0;
   Function *opnd = call->getCalledFunction();
+  StringRef fname;
+  if (!opnd) {
+    Value *v = call->getOperand(0);
+    if (ConstantExpr *cexp = dyn_cast<ConstantExpr>(v)) {
+      if (cexp->getOpcode() == Instruction::BitCast) {
+        opnd = dyn_cast<Function>(cexp->getOperand(0));
+      }
+    }
+  }
+  
   if (!opnd)
     return 0;
-
+  
   if (opnd->getName() == "polybench_timer_start" ||
       opnd->getName() == "timer_start") {
     return +1;
