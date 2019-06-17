@@ -28,6 +28,14 @@
 using namespace llvm;
 
 
+cl::opt<bool> CountAll("countall", cl::value_desc("countall"),
+  cl::desc("Perform analysis of the entire code (not just the instrumented parts)"),
+  cl::init(false));
+
+
+#define MD_COUNT_INSTR "tmlfa.count"
+
+
 struct MLFeatureBlock {
   BasicBlock *entry;
   std::set<BasicBlock *> contents;
@@ -54,10 +62,32 @@ struct MLFeatureBlockComputationState {
 char TaffoMLFeatureAnalysisPass::ID = 0;
 
 
+void setCountEnabledForInstruction(Instruction *instr, bool enabled)
+{
+  MDNode *existing = instr->getMetadata(MD_COUNT_INSTR);
+  if (existing && !enabled) {
+    instr->setMetadata(MD_COUNT_INSTR, nullptr);
+  } else if (!existing && enabled) {
+    ConstantInt *booltrue = ConstantInt::get(Type::getInt1Ty(instr->getContext()), 1);
+    ConstantAsMetadata *cmd = ConstantAsMetadata::get(booltrue);
+    MDNode *newmd = MDTuple::get(instr->getContext(), {cmd});
+    instr->setMetadata(MD_COUNT_INSTR, newmd);
+  }
+}
+
+
+bool getCountEnabledForInstruction(Instruction *instr)
+{
+  MDNode *existing = instr->getMetadata(MD_COUNT_INSTR);
+  return !!existing;
+}
+
+
 void computeBasicBlockStats(MLFeatureBlock& b, BasicBlock *bb, MLFeatureBlockComputationState& state)
 {
   for (Instruction& i: *bb) {
-    b.imix.updateWithInstruction(&i);
+    if (isSkippableInstruction(&i))
+      continue;
     
     if (AllocaInst *alloca = dyn_cast<AllocaInst>(&i)) {
       const DataLayout &dl = alloca->getModule()->getDataLayout();
@@ -79,6 +109,11 @@ void computeBasicBlockStats(MLFeatureBlock& b, BasicBlock *bb, MLFeatureBlockCom
         }
       }
     }
+    
+    if (!CountAll && !getCountEnabledForInstruction(&i))
+      continue;
+    
+    b.imix.updateWithInstruction(&i);
     
     if (isa<CallBase>(&i)) {
       b.minDist_callBase = std::min(b.minDist_callBase, state.lastDist_callBase);
@@ -119,15 +154,49 @@ void computeBlockStats(MLFeatureBlock& b)
 }
 
 
+void computeEnabledInstructions(Function *f, DominatorTree& dom)
+{
+  struct state {
+    BasicBlock *bb;
+    int nestingLevel;
+  };
+  std::deque<state> queue;
+  queue.push_back({dom.getRoot(), 0});
+  
+  while (!queue.empty()) {
+    state self = *(queue.begin());
+    queue.pop_front();
+    
+    for (Instruction& inst: *self.bb) {
+      int delim = isDelimiterInstruction(&inst);
+      self.nestingLevel += delim;
+      setCountEnabledForInstruction(&inst, self.nestingLevel > 0);
+    }
+    
+    SmallVector<BasicBlock *, 2> next;
+    dom.getDescendants(self.bb, next);
+    for (BasicBlock *nexti: next)
+      if (nexti != self.bb)
+        queue.push_back({nexti, self.nestingLevel});
+  }
+}
+
+
 void TaffoMLFeatureAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const
 {
   AU.addRequiredTransitive<ScalarEvolutionWrapperPass>();
   AU.addRequiredTransitive<LoopInfoWrapperPass>();
+  AU.addRequiredTransitive<DominatorTreeWrapperPass>();
 }
 
 
 bool TaffoMLFeatureAnalysisPass::runOnFunction(Function &F)
 {
+  if (!CountAll) {
+    DominatorTreeWrapperPass& dtwp = Pass::getAnalysis<DominatorTreeWrapperPass>();
+    computeEnabledInstructions(&F, dtwp.getDomTree());
+  }
+
   LoopInfo& li = this->getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
   
   /* compute the list of basic blocks that are outside any loop */
@@ -187,20 +256,33 @@ bool TaffoMLFeatureAnalysisPass::runOnFunction(Function &F)
     }
   }
   
+  int blockIdx[nfeat];
+  blockIdx[0] = 0;
+  for (int i=1, k=1; i<nfeat; i++) {
+    if (features[i].imix.ninstr > 0)
+      blockIdx[i] = k++;
+    else
+      blockIdx[i] = -1;
+  }
+  
   /* print */
-  for (int i=0; i<nfeat; i++) {
-    for (int j=1; j<nfeat; j++) {
-      std::cout << "B" << i << "_contain_B" << j << " " << loopNestMtx[i][j] << std::endl;
+  for (int ri=0; ri<nfeat; ri++) {
+    int i = blockIdx[ri];
+    if (i < 0) continue;
+    for (int rj=1; rj<nfeat; rj++) {
+      int j = blockIdx[rj];
+      if (j < 0) continue;
+      std::cout << "B" << i << "_contain_B" << j << " " << loopNestMtx[ri][rj] << std::endl;
     }
-    std::cout << "B" << i << "_depth " << features[i].depth << std::endl;
-    std::cout << "B" << i << "_tripCount " << features[i].tripCount << std::endl;
-    std::cout << "B" << i << "_maxAllocSize " << features[i].maxAllocSize << std::endl;
-    std::cout << "B" << i << "_numAnnotatedInstr " << features[i].numAnnotatedInstr << std::endl;
-    std::cout << "B" << i << "_minDist_mul " << features[i].minDist_mul << std::endl;
-    std::cout << "B" << i << "_minDist_div " << features[i].minDist_div << std::endl;
-    std::cout << "B" << i << "_minDist_call " << features[i].minDist_callBase << std::endl;
+    std::cout << "B" << i << "_depth " << features[ri].depth << std::endl;
+    std::cout << "B" << i << "_tripCount " << features[ri].tripCount << std::endl;
+    std::cout << "B" << i << "_maxAllocSize " << features[ri].maxAllocSize << std::endl;
+    std::cout << "B" << i << "_numAnnotatedInstr " << features[ri].numAnnotatedInstr << std::endl;
+    std::cout << "B" << i << "_minDist_mul " << features[ri].minDist_mul << std::endl;
+    std::cout << "B" << i << "_minDist_div " << features[ri].minDist_div << std::endl;
+    std::cout << "B" << i << "_minDist_call " << features[ri].minDist_callBase << std::endl;
     std::cout << "B" << i << "_n_* " << features[i].imix.ninstr << std::endl;
-    for (auto it = features[i].imix.stat.begin(); it != features[i].imix.stat.end(); it++) {
+    for (auto it = features[ri].imix.stat.begin(); it != features[ri].imix.stat.end(); it++) {
       std::cout << "B" << i << "_n_" << it->first << " " << it->second << std::endl;
     }
   }
