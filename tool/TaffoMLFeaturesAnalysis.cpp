@@ -173,11 +173,11 @@ void computeEnabledInstructions(Function *f, DominatorTree& dom)
       setCountEnabledForInstruction(&inst, self.nestingLevel > 0);
     }
     
-    SmallVector<BasicBlock *, 2> next;
-    dom.getDescendants(self.bb, next);
-    for (BasicBlock *nexti: next)
-      if (nexti != self.bb)
-        queue.push_back({nexti, self.nestingLevel});
+    for (DomTreeNode *nexti: dom[self.bb]->getChildren()) {
+      if (nexti->getBlock() != self.bb) {
+        queue.push_back({nexti->getBlock(), self.nestingLevel});
+      }
+    }
   }
 }
 
