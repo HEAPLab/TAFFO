@@ -106,13 +106,17 @@ bool isSkippableInstruction(llvm::Instruction *instr)
   if (!opnd)
     return false;
   
+  if (isDelimiterFunction(opnd))
+    return true;
   if (opnd->getIntrinsicID() == Intrinsic::ID::annotation ||
       opnd->getIntrinsicID() == Intrinsic::ID::var_annotation ||
       opnd->getIntrinsicID() == Intrinsic::ID::ptr_annotation ||
       opnd->getIntrinsicID() == Intrinsic::ID::dbg_addr ||
       opnd->getIntrinsicID() == Intrinsic::ID::dbg_label ||
       opnd->getIntrinsicID() == Intrinsic::ID::dbg_value ||
-      opnd->getIntrinsicID() == Intrinsic::ID::dbg_declare)
+      opnd->getIntrinsicID() == Intrinsic::ID::dbg_declare ||
+      opnd->getIntrinsicID() == Intrinsic::ID::lifetime_end ||
+      opnd->getIntrinsicID() == Intrinsic::ID::lifetime_start)
     return true;
   return false;
 }

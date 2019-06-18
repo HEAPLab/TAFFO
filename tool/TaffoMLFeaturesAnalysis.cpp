@@ -177,8 +177,12 @@ void computeEnabledInstructions(Function *f, DominatorTree& dom)
     
     for (Instruction& inst: *self.bb) {
       int delim = isDelimiterInstruction(&inst);
-      self.nestingLevel += delim;
-      setCountEnabledForInstruction(&inst, self.nestingLevel > 0);
+      if (!delim) {
+        setCountEnabledForInstruction(&inst, self.nestingLevel > 0);
+      } else {
+        self.nestingLevel += delim;
+        setCountEnabledForInstruction(&inst, false);
+      }
     }
     
     for (DomTreeNode *nexti: dom[self.bb]->getChildren()) {
