@@ -137,6 +137,10 @@ int main(int argc, char *argv[])
   LLVMContext c;
   SMDiagnostic Err;
   std::unique_ptr<Module> m = parseIRFile(InputFilename, Err, c);
+  if (!m) {
+    std::cerr << "Error reading module " << InputFilename << std::endl;
+    return 1;
+  }
 
   if (Verbose) {
     std::cerr << "Successfully read Module:" << std::endl;
