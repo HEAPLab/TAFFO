@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <deque>
+#include <algorithm>
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/ErrorOr.h"
@@ -46,9 +47,16 @@ struct MLFeatureBlock {
   InstructionMix imix;
   int maxAllocSize = 0;
   int numAnnotatedInstr = 0;
-  int minDist_mul = INT_MAX;
-  int minDist_div = INT_MAX;
-  int minDist_callBase = INT_MAX;
+  // 12 is a completely random guess on the average length
+  // of a modern cpu's pipeline
+  int minDist_mul = 12;
+  int minDist_div = 12;
+  int minDist_callBase = 12;
+  
+  // used for sorting
+  bool operator< (const MLFeatureBlock& other) const {
+    return depth != other.depth ? depth < other.depth : tripCount < other.tripCount;
+  }
 };
 
 
@@ -217,7 +225,7 @@ bool TaffoMLFeatureAnalysisPass::runOnFunction(Function &F)
   SmallVector<Loop *, 4> loops = li.getLoopsInPreorder();
   int nfeat = loops.size() + 1;
   
-  MLFeatureBlock features[nfeat];
+  std::vector<MLFeatureBlock> features(nfeat);
   features[0].tripCount = 1;
   features[0].contents = allbbs;
   computeBlockStats(features[0]);
@@ -238,6 +246,9 @@ bool TaffoMLFeatureAnalysisPass::runOnFunction(Function &F)
     computeBlockStats(features[i]);
     i++;
   }
+  
+  // sort blocks by depth first, trip count later
+  std::sort(features.begin(), features.end());
   
   /* loopNestMtx[i][j] == true  ==>>  L_j inside L_i */
   std::vector<std::vector<bool>> loopNestMtx;
