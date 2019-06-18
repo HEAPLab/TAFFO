@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
   
   /* remove all functions (when possible) */
   for (Function& fun: m->functions()) {
-    if (&fun != mainfunc) {
+    if (&fun != mainfunc && isFunctionInlinable(&fun)) {
       fun.addFnAttr(Attribute::AlwaysInline);
       fun.setLinkage(GlobalValue::LinkageTypes::InternalLinkage);
     }

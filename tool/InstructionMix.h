@@ -17,6 +17,7 @@ public:
   
 };
 
+bool isFunctionInlinable(llvm::Function *fun);
 int isDelimiterInstruction(llvm::Instruction *instr);
 bool isSkippableInstruction(llvm::Instruction *instr);
 
