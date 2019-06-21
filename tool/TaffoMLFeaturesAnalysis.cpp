@@ -296,7 +296,7 @@ bool TaffoMLFeatureAnalysisPass::runOnFunction(Function &F)
     std::cout << "B" << i << "_minDist_mul " << features[ri].minDist_mul << std::endl;
     std::cout << "B" << i << "_minDist_div " << features[ri].minDist_div << std::endl;
     std::cout << "B" << i << "_minDist_call " << features[ri].minDist_callBase << std::endl;
-    std::cout << "B" << i << "_n_* " << features[i].imix.ninstr << std::endl;
+    std::cout << "B" << i << "_n_* " << features[ri].imix.ninstr << std::endl;
     for (auto it = features[ri].imix.stat.begin(); it != features[ri].imix.stat.end(); it++) {
       std::cout << "B" << i << "_n_" << it->first << " " << it->second << std::endl;
     }
