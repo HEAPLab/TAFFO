@@ -58,3 +58,5 @@ if (NOT LLVM_ENABLE_RTTI)
   target_compile_options(taffo-mlfeat PRIVATE -fno-rtti)
 endif()
 install(TARGETS taffo-mlfeat DESTINATION bin)
+
+add_subdirectory(taffo-j2a)
