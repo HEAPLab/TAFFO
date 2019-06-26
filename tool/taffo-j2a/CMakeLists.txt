@@ -16,3 +16,5 @@ TARGET_COMPILE_FEATURES(taffo-j2a PUBLIC cxx_std_17)
 TARGET_LINK_LIBRARIES(taffo-j2a PRIVATE j2a clangTooling clangBasic clangASTMatchers LLVMSupport)
 TARGET_COMPILE_OPTIONS(taffo-j2a PRIVATE -fno-exceptions -fno-rtti -fno-omit-frame-pointer)
 
+install(TARGETS taffo-j2a DESTINATION bin)
+install(TARGETS j2a DESTINATION lib)
