@@ -154,8 +154,8 @@ namespace taffo
 				stream << "range(" << minRange << ", " << maxRange << ") ";
 
 			if (type)
-				stream << "type(" << getSignStr() << ", " << std::to_string(bitsSize)
-							 << ", " << std::to_string(fractionalPos) << ") ";
+				stream << "type(" << getSignStr() << " " << std::to_string(bitsSize)
+							 << " " << std::to_string(fractionalPos) << ") ";
 
 			if (error)
 				stream << "error(" << errorValue << ") ";
