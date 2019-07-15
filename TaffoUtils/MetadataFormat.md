@@ -321,6 +321,32 @@ static void MetadataManager::setStartingPoint(Function &F);
 static bool MetadataManager::isStartingPoint(const Function &F);
 ```
 
+#### Constant Info
+
+This kind of metadata is needed by the TAFFO error propagator to keep track
+of value ranges and type data of converted constants.
+It is kept as a list of input information metadata tuples,
+attached to instructions containing constant operands,
+in the same order of the latter.
+For non-constant operands, `i1 flase` is used as a placeholder.
+```
+%7 = mul i64 %6, 1518500249, !taffo.constinfo !74
+```
+At the end of the file:
+```
+!74 = !{i1 false, !75}
+!75 = !{!76, !77, i1 false, i2 0}
+!76 = !{!"fixp", i32 32, i32 31}
+!77 = !{double 0x3FE6A09E667F3BCC, double 0x3FE6A09E667F3BCC}
+```
+
+Related functions:
+```cpp
+#include "MDUtils/Metadata.h"
+void retrieveConstInfo(const llvm::Instruction &I, llvm::SmallVectorImpl<InputInfo *> &ResII);
+static void setConstInfoMetadata(llvm::Instruction &I, const llvm::ArrayRef<InputInfo *> CInfo);
+```
+
 #### Loop unroll count
 
 An i32 integer constant attached to the terminator instruction of the loop header block,
