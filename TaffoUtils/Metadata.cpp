@@ -90,6 +90,27 @@ retrieveArgumentInputInfo(const Function &F, SmallVectorImpl<MDInfo *> &ResII) {
 }
 
 void MetadataManager::
+retrieveConstInfo(const llvm::Instruction &I,
+		  llvm::SmallVectorImpl<InputInfo *> &ResII) {
+  MDNode *ArgsMD = I.getMetadata(CONST_INFO_METADATA);
+  if (ArgsMD == nullptr)
+    return;
+
+  ResII.reserve(ArgsMD->getNumOperands());
+  for (const MDOperand &MDOp : ArgsMD->operands()) {
+    if (ConstantAsMetadata *CMD = dyn_cast<ConstantAsMetadata>(MDOp)) {
+      if (ConstantInt *CI = dyn_cast<ConstantInt>(CMD->getValue())) {
+	if (CI->isZero()) {
+	  ResII.push_back(nullptr);
+	  continue;
+	}
+      }
+    }
+    ResII.push_back(retrieveInputInfo(cast<MDNode>(MDOp)).get());
+  }
+}
+
+void MetadataManager::
 setMDInfoMetadata(llvm::Value *u, const MDInfo *mdinfo) {
   StringRef mdid;
   
@@ -150,6 +171,26 @@ setArgumentInputInfoMetadata(Function &F, const ArrayRef<MDInfo *> AInfo) {
   assert(AllArgsMD.size() / 2 == F.getFunctionType()->getNumParams() && "writing malformed funinfo");
 
   F.setMetadata(FUNCTION_ARGS_METADATA, MDNode::get(Context, AllArgsMD));
+}
+
+void MetadataManager::
+setConstInfoMetadata(llvm::Instruction &I,
+		     const llvm::ArrayRef<InputInfo *> CInfo) {
+  assert(I.getNumOperands() == CInfo.size()
+	 && "Must provide InputInfo or nullptr for each operand.");
+  LLVMContext &Context = I.getContext();
+  SmallVector<Metadata *, 2U> ConstMDs;
+  ConstMDs.reserve(CInfo.size());
+
+  for (InputInfo *II : CInfo) {
+    if (II) {
+      ConstMDs.push_back(II->toMetadata(Context));
+    } else {
+      ConstMDs.push_back(ConstantAsMetadata::get(ConstantInt::getFalse(Context)));
+    }
+  }
+
+  I.setMetadata(CONST_INFO_METADATA, MDNode::get(Context, ConstMDs));
 }
 
 StructInfo* MetadataManager::retrieveStructInfo(const Instruction &I) {
