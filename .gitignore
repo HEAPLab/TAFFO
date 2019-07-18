@@ -13,3 +13,4 @@ working-dist
 test/simple-test-cases-FOR-REGRESSION
 working-dist-llvm6
 *~
+test/jpeg-decoder-no-external-fft
