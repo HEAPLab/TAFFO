@@ -21,16 +21,39 @@ namespace taffo
 		auto disabled = object.getNumber("disabled");
 		auto strc = object.getString("struct");
 
+		std::string rmxStr;
+		std::string rmnStr;
+		bool maxExist(false);
+		bool minExist(false);
+
 		if (rangeMax.hasValue())
-			rangeMaxStr = std::to_string(rangeMax.getValue());
+		{
+			rmxStr = std::to_string(rangeMax.getValue());
+			maxExist = true;
+		}
 
 		if (rangeMin.hasValue())
-			rangeMinStr = std::to_string(rangeMin.getValue());
+		{
+			rmnStr = std::to_string(rangeMin.getValue());
+			minExist = true;
+		}
 
-		if (rangeMaxStr.hasValue() != rangeMinStr.hasValue())
+		if (rangeMaxStr.hasValue())
+		{
+			rmxStr = rangeMaxStr.getValue();
+			maxExist = true;
+		}
+
+		if (rangeMinStr.hasValue())
+		{
+			rmnStr = rangeMinStr.getValue();
+			minExist = true;
+		}
+
+		if (minExist != maxExist)
 			llvm::errs() << "only one of range min and max was defined\n";
-		else if (rangeMaxStr.hasValue())
-			enableRange(rangeMinStr.getValue(), rangeMaxStr.getValue());
+		else if (minExist)
+			enableRange(rmnStr, rmxStr);
 
 		if (target.hasValue())
 			setTargetString(target->str());
@@ -131,8 +154,8 @@ namespace taffo
 				stream << "range(" << minRange << ", " << maxRange << ") ";
 
 			if (type)
-				stream << "type(" << getSignStr() << ", " << std::to_string(bitsSize)
-							 << ", " << std::to_string(fractionalPos) << ") ";
+				stream << "type(" << getSignStr() << " " << std::to_string(bitsSize)
+							 << " " << std::to_string(fractionalPos) << ") ";
 
 			if (error)
 				stream << "error(" << errorValue << ") ";

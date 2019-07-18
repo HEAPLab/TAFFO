@@ -31,6 +31,7 @@
 #define INPUT_INFO_METADATA    "taffo.info"
 #define FUNCTION_ARGS_METADATA "taffo.funinfo"
 #define STRUCT_INFO_METADATA   "taffo.structinfo"
+#define CONST_INFO_METADATA    "taffo.constinfo"
 #define COMP_ERROR_METADATA    "taffo.abserror"
 #define WRONG_CMP_METADATA     "taffo.wrongcmptol"
 #define MAX_REC_METADATA       "taffo.maxrec"
@@ -74,8 +75,11 @@ public:
   /// Fill vector ResII with the InputInfo for F's parameters retrieved from F's metadata.
   void retrieveArgumentInputInfo(const llvm::Function &F,
 				 llvm::SmallVectorImpl<MDInfo *> &ResII);
-  
-  
+
+  /// Fill vector ResII with the InputInfo for Constant operands of I
+  void retrieveConstInfo(const llvm::Instruction &I,
+			 llvm::SmallVectorImpl<InputInfo *> &ResII);
+
   /// Attach to value u the specified MDInfo node.
   static void setMDInfoMetadata(llvm::Value *u, const MDInfo *mdinfo);
 
@@ -100,8 +104,11 @@ public:
   /// Each InputInfo object refers to the function parameter with the same index.
   static void setArgumentInputInfoMetadata(llvm::Function &F,
 					   const llvm::ArrayRef<MDInfo *> AInfo);
+
   
-  
+  static void setConstInfoMetadata(llvm::Instruction &I,
+				   const llvm::ArrayRef<InputInfo *> CInfo);
+
   ///\section Init Metadata
   
   static void setInputInfoInitWeightMetadata(llvm::Value *v, int weight);
