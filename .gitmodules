@@ -13,3 +13,6 @@
 [submodule "RangeAnalysis"]
 	path = RangeAnalysis
 	url = git@github.com:HEAPLab/TAFFO-submodule-vra.git
+[submodule "test"]
+	path = test
+	url = git@github.com:HEAPLab/TAFFO-test.git
