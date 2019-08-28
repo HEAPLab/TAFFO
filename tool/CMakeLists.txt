@@ -59,4 +59,4 @@ if (NOT LLVM_ENABLE_RTTI)
 endif()
 install(TARGETS taffo-mlfeat DESTINATION bin)
 
-add_subdirectory(taffo-j2a)
+#add_subdirectory(taffo-j2a)
