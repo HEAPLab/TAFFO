@@ -96,11 +96,17 @@ display the error computed by the Error Propagation TAFFO pass.
 ### *backtracking*
 
 ```
-backtracking
+backtracking(<int>)
 backtracking(<bool>)
+backtracking
 ```
 
-The `backtracking` attribute, specifies if Initialization should schedule for conversion the values indirectly used by this variable, in addition to the values which use it. This behavior can be explicitly enabled or disabled using the `backtracking(<bool>)` syntax, or it can be enabled through the `backtracking` syntax, which is equivalent to writing `backtracking(yes)`.
+The `backtracking` attribute, specifies if Initialization should schedule for conversion the values indirectly used by this variable, in addition to the values which use it.
+The integer parameter to the attribute specifies the maximum recursive depth of the backtracking traversal -- in other words, the maximum DFG node distance between two instructions affected by it. Specifying the literal `0` disables backtracking.
+
+The `backtracking(<bool>)` syntax allows to enable unlimited-depth backtracking by specifying the parameter `true`. `backtracking(false)` and `backtracking(0)` are synonyms.
+
+The `backtracking` syntax is equivalent to writing `backtracking(yes)`.
 
 ## Data Type Patterns
 
