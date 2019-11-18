@@ -215,9 +215,9 @@ struct InputInfo : public MDInfo {
       if (!first) sstm << " ";
       sstm << "error(" << *IError << ")";
     }
-    if (IEnableConversion) {
+    if (!IEnableConversion) {
       if (!first) sstm << " ";
-      sstm << "convertible";
+      sstm << "disabled";
     }
     if (IFinal) {
       if (!first) sstm << " ";
