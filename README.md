@@ -1,4 +1,5 @@
-# TAFFO
+<img src="_logo/TAFFO-logo-black.png" alt="TAFFO" width=30%>
+
 *(Tuning Assistant for Floating Point to Fixed Point Optimization)*
 
 TAFFO is an autotuning framework which tries to replace floating point operations with fixed point operations as much as possible.
