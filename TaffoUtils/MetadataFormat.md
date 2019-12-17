@@ -99,6 +99,7 @@ static void MetadataManager::setInputInfoMetadata(GlobalObject &V, const InputIn
 
 The functions above use the `InputInfo` struct for storing the data to be converted to metadata.
 It contains the following public fields:
+
 - ` TType *IType;`: this is a shared pointer to an object describing the type of the instruction.
   The only supported type is currently `FPType`, which describes a fixed point type, and is a subclass of `TType`.
   For further information on the member fields and functions of `FPType`, please refer to file `InputInfo.h`.
@@ -188,7 +189,9 @@ StructInfo SI2(S2);
 
 MetadataManager::setStructInfoMetadata(I, SI2);
 ```
+
 In the piece of code above, Instruction `I` could be of a type of this kind:
+
 ```cpp
 struct {
   int FixedPointField1;
@@ -315,6 +318,7 @@ At the end of the file:
 ```
 
 Related functions:
+
 ```cpp
 #include "MDUtils/Metadata.h"
 static void MetadataManager::setStartingPoint(Function &F);
@@ -341,6 +345,7 @@ At the end of the file:
 ```
 
 Related functions:
+
 ```cpp
 #include "MDUtils/Metadata.h"
 void retrieveConstInfo(const llvm::Instruction &I, llvm::SmallVectorImpl<InputInfo *> &ResII);
