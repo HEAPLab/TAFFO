@@ -65,6 +65,8 @@ add_llvm_library(gtest
 )
 set_property(TARGET gtest PROPERTY CXX_STANDARD 11)
 set_property(TARGET gtest PROPERTY CXX_STANDARD_REQUIRED ON)
-
+if (NOT LLVM_ENABLE_RTTI)
+  target_compile_options(gtest PRIVATE -fno-rtti)
+endif()
 
 add_subdirectory(UnitTestMain)

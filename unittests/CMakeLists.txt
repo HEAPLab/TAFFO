@@ -44,6 +44,9 @@ function(taffo_add_unittest test_suite test_name)
   add_executable(${test_name} ${ARGN})
   set_property(TARGET ${test_name} PROPERTY CXX_STANDARD 11)
   set_property(TARGET ${test_name} PROPERTY CXX_STANDARD_REQUIRED ON)
+  if (NOT LLVM_ENABLE_RTTI)
+    target_compile_options(${test_name} PRIVATE -fno-rtti)
+  endif()
   set(outdir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR})
   set_output_directory(${test_name} BINARY_DIR ${outdir} LIBRARY_DIR ${outdir})
   # libpthreads overrides some standard library symbols, so main
@@ -63,12 +66,5 @@ function(add_taffo_unittest test_dirname)
 endfunction()
 
 add_taffo_unittest(TAFFOUnitTests MultiValueMapTest.cpp)
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set_property(TARGET TAFFOUnitTests APPEND_STRING PROPERTY
-    LINK_FLAGS " -undefined dynamic_lookup")
-endif()
-
-set_property(TARGET TAFFOUnitTests PROPERTY CXX_STANDARD 11)
-set_property(TARGET TAFFOUnitTests PROPERTY CXX_STANDARD_REQUIRED ON)
+target_link_libraries(TAFFOUnitTests PRIVATE TaffoUtils TaffoUtils)
 
