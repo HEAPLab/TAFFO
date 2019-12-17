@@ -11,4 +11,6 @@ add_custom_target(taffo)
 add_dependencies(taffo LLVMFloatToFixed TaffoDTA LLVMErrorPropagator TaffoInitializer TaffoVRA)
 
 add_subdirectory(TaffoUtils)
+add_subdirectory(utils)
+add_subdirectory(unittests)
 add_subdirectory(tool)
