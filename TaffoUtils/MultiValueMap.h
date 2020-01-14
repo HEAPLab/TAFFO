@@ -53,7 +53,7 @@ protected:
 
 template <typename BaseT, bool isConst = false>
 class MultiValueMapIterator :
-    public std::iterator<std::forward_iterator_tag,
+    public std::iterator<std::bidirectional_iterator_tag,
                          std::pair<typename BaseT::key_type,
                                    typename BaseT::mapped_type>> {
   using KeyT = typename BaseT::key_type;
@@ -76,13 +76,13 @@ class MultiValueMapIterator :
   BaseT *Parent = nullptr;
   // IOuterList can be nullptr if not known. At end of list it must point to
   // the end of the list.
-  OuterListItT IOuterList = nullptr;
+  mutable OuterListItT IOuterList = nullptr;
   // nullptr only when at end of list
   //   Would be fully redundant with IOuterList if not for the unique_ptr
   // that stores each list.
   InnerListT *InnerList = nullptr;
   // Can be nullptr if not known or if at end of list.
-  InnerListItT IInnerList = nullptr;
+  mutable InnerListItT IInnerList = nullptr;
   // nullptr only when at end of list
   KeyT Key = nullptr;
   
@@ -107,7 +107,7 @@ private:
     return IOuterList != nullptr;
   }
   
-  void makeInnerListIt() {
+  void makeInnerListIt() const {
     if (hasInnerListIt())
       return;
     IInnerList = InnerList->begin();
@@ -116,7 +116,7 @@ private:
         break;
     }
   }
-  void makeOuterListIt() {
+  void makeOuterListIt() const {
     if (hasOuterListIt())
       return;
     makeInnerListIt();
@@ -187,18 +187,7 @@ public:
     makeInnerListIt();
     IInnerList++;
     if (IInnerList == InnerList->end()) {
-      makeOuterListIt();
-      IOuterList++;
-      if (IOuterList == Parent->ValueListsStorage.end()) {
-        IInnerList = nullptr;
-        InnerList = nullptr;
-        Key = nullptr;
-        return *this;
-      }
-      IInnerList = IOuterList->get()->begin();
-      InnerList = IOuterList->get();
-      Key = *IInnerList;
-      return *this;
+      return skip();
     }
     Key = *IInnerList;
     return *this;
@@ -206,6 +195,24 @@ public:
   MultiValueMapIterator operator++(int) {
     MultiValueMapIterator Res = *this;
     ++(*this);
+    return Res;
+  }
+  
+  MultiValueMapIterator& operator--() {
+    makeInnerListIt();
+    if (IInnerList == nullptr || IInnerList == InnerList->begin()) {
+      makeOuterListIt();
+      IOuterList--;
+      IInnerList = IOuterList->get()->end();
+      InnerList = IOuterList->get();
+    }
+    IInnerList--;
+    Key = *IInnerList;
+    return *this;
+  }
+  MultiValueMapIterator operator--(int) {
+    MultiValueMapIterator Res = *this;
+    --(*this);
     return Res;
   }
   
@@ -223,6 +230,13 @@ public:
     Key = nullptr;
     return *this;
   }
+  MultiValueMapIterator& reverseSkip() {
+    makeOuterListIt();
+    IOuterList--;
+    IInnerList = IOuterList->get()->begin();
+    InnerList = IOuterList->get();
+    return *this;
+  }
   
   bool operator==(const MultiValueMapIterator &RHS) const {
     if (this == &RHS)
@@ -238,6 +252,26 @@ public:
   }
   ValueTypeProxy operator->() const {
     return operator*();
+  }
+  
+  bool operator<=(const MultiValueMapIterator& RHS) const {
+    if (RHS.Key == Key)
+      return true;
+    if (RHS.InnerList == InnerList) {
+      makeInnerListIt();
+      return IInnerList <= RHS.IInnerList;
+    }
+    makeOuterListIt();
+    return IOuterList <= RHS.IOuterList;
+  }
+  bool operator<(const MultiValueMapIterator& RHS) const {
+    return !(RHS <= *this);
+  }
+  bool operator>(const MultiValueMapIterator& RHS) const {
+    return !(*this <= RHS);
+  }
+  bool operator>=(const MultiValueMapIterator& RHS) const {
+    return RHS <= *this;
   }
 };
 
@@ -326,7 +360,7 @@ public:
   ValueT& operator[](const KeyT& K) {
     auto VListIt = this->Index.find(K);
     assert(VListIt != this->Index.end());
-    return *(this->ValueListsToValues.find(*VListIt)->get());
+    return *(this->ValueListsToValues.find(VListIt->second)->second.get());
   }
   
   /// Get the list of keys associated to the same value as a given key.
@@ -341,25 +375,41 @@ public:
     return true;
   }
   
+  std::pair<iterator, bool> insert(iterator P, const KeyT& K, const ValueT &V) {
+    iterator Existing = this->find(K);
+    if (Existing != this->end())
+      return std::make_pair(Existing, false);
+    P.makeOuterListIt();
+    ValueListKeyT *NewVL = new ValueListKeyT{K};
+    auto NewI = this->ValueListsStorage.insert(P.IOuterList,
+        std::unique_ptr<ValueListKeyT>(NewVL));
+    this->Index[K] = NewVL;
+    this->ValueListsToValues[NewVL] =
+      std::unique_ptr<ValueT>(new ValueT(V));
+    iterator ResIt = iterator(*this, NewVL->begin(), NewI);
+    return std::make_pair(ResIt, true);
+  }
   /// Inserts key,value pair into the map if the key isn't already in the map.
   /// Note that this method will always create a new Value* group, regardless
   /// of the mapped value.
   /// @returns pair(iterator pointing to the inserted pair, true) in case of
   ///   success; otherwise -- if the key is already in the map --
-  ///   pair(the given iterator, false).
+  ///   pair(the position of the existing pair, false).
   std::pair<iterator, bool> insert(iterator P,
-        const std::pair<KeyT, ValueT> &KV) {
-    if (this->Index.find(KV.first) != this->Index.end())
-      return std::make_pair(P, false);
-    P.makeOuterListIt();
-    ValueListKeyT *NewVL = new ValueListKeyT{KV.first};
-    auto NewI = this->ValueListsStorage.insert(P.IOuterList,
-        std::unique_ptr<ValueListKeyT>(NewVL));
-    this->Index[KV.first] = NewVL;
-    this->ValueListsToValues[NewVL] =
-      std::unique_ptr<ValueT>(new ValueT(KV.second));
-    iterator ResIt = iterator(*this, NewVL->begin(), NewI);
-    return std::make_pair(ResIt, true);
+        const std::pair<KeyT, ValueT>& KV) {
+    return insert(P, KV.first, KV.second);
+  }
+  std::pair<iterator, bool> insert(iterator P, std::pair<KeyT, ValueT>&& KV) {
+    return insert(P, KV.first, KV.second);
+  }
+  std::pair<iterator, bool> push_back(const std::pair<KeyT, ValueT>& KV) {
+    return insert(end(), KV.first, KV.second);
+  }
+  std::pair<iterator, bool> push_back(std::pair<KeyT, ValueT>&& KV) {
+    return insert(end(), KV.first, KV.second);
+  }
+  std::pair<iterator, bool> push_back(const KeyT& K, const ValueT &V) {
+    return insert(end(), K, V);
   }
   
   /// Adds a key to an existing key list / value association.
@@ -461,6 +511,14 @@ public:
       return false;
     erase(KI);
     return true;
+  }
+  
+  void print() {
+    for (auto v: *this) {
+      #define DEBUG_TYPE "MultiValueMap"
+      LLVM_DEBUG(llvm::dbgs() << "K=" << v.first << " KeyVList=" << this->Index[v.first] << " V=" << &(v.second) << "\n");
+      #undef DEBUG_TYPE
+    }
   }
 };
 

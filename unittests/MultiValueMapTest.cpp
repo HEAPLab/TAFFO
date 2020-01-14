@@ -29,7 +29,7 @@ protected:
       SubV(BinaryOperator::CreateSub(ConstantV, ConstantV)) {}
       
   template <typename VMapT, typename ExpListT>
-  static bool compareValuesToExpected(VMapT& VVMap, ExpListT& Expected) {
+  static bool compareKeysToExpected(VMapT& VVMap, ExpListT& Expected) {
     for (auto EInner: Expected) {
       for (auto V: EInner) {
         SmallVector<Value *, 2> All;
@@ -129,7 +129,7 @@ TEST_F(MultiValueMapTest, InsertBulkAssociated) {
   MultiValueMap<Value *, int> VVMap;
   VVMap.insert(VVMap.begin(), Group.begin(), Group.end(), 10);
   SmallVector<SmallVector<Value *, 3>, 2> Expected = {Group};
-  ASSERT_TRUE(compareValuesToExpected(VVMap, Expected));
+  ASSERT_TRUE(compareKeysToExpected(VVMap, Expected));
 }
 
 TEST_F(MultiValueMapTest, AssociateOneLeft) {
@@ -160,7 +160,7 @@ TEST_F(MultiValueMapTest, AssociateOneLeft) {
   SmallVector<SmallVector<Value *, 2>, 2> Expected =
       {{this->AddV.get(), this->ConstantV},
        {this->BitcastV.get(), this->CmpV.get()}};
-  ASSERT_TRUE(compareValuesToExpected(VVMap, Expected));
+  ASSERT_TRUE(compareKeysToExpected(VVMap, Expected));
 }
 
 TEST_F(MultiValueMapTest, AssociateOneRight) {
@@ -195,7 +195,7 @@ TEST_F(MultiValueMapTest, AssociateOneRight) {
   SmallVector<SmallVector<Value *, 2>, 2> Expected =
       {{this->ConstantV, this->AddV.get()},
        {this->SubV.get(), this->BitcastV.get()}};
-  ASSERT_TRUE(compareValuesToExpected(VVMap, Expected));
+  ASSERT_TRUE(compareKeysToExpected(VVMap, Expected));
 }
 
 TEST_F(MultiValueMapTest, ConstIterator) {
@@ -226,6 +226,28 @@ TEST_F(MultiValueMapTest, LazyIterator) {
        {this->SubV.get(), 20},
        {this->BitcastV.get(), 30}};
   ASSERT_TRUE(comparePairsFromItToExpected(I1, VVMap.end(), Expected));
+}
+
+TEST_F(MultiValueMapTest, BackwardsLazyIterator) {
+  MultiValueMap<Value *, int> VVMap;
+  VVMap.insert(VVMap.end(), {this->AddV.get(), 10});
+  auto G1 = VVMap.insert(VVMap.end(), {this->ConstantV, 20});
+  VVMap.insertLeft(++G1.first, this->SubV.get());
+  VVMap.insert(VVMap.end(), {this->BitcastV.get(), 30});
+  
+  auto I = VVMap.find(this->SubV.get());
+  SmallVector<std::pair<Value *, int>, 3> Expected =
+      {{this->SubV.get(), 20},
+       {this->ConstantV, 20},
+       {this->AddV.get(), 10}};
+  auto ExpI = Expected.begin();
+  ASSERT_EQ(I->first, ExpI->first);
+  ASSERT_EQ(I->second, ExpI->second);
+  while (I != VVMap.begin()) {
+    --I; ++ExpI;
+    ASSERT_EQ(I->first, ExpI->first);
+    ASSERT_EQ(I->second, ExpI->second);
+  }
 }
 
 TEST_F(MultiValueMapTest, EraseOneFromList) {
