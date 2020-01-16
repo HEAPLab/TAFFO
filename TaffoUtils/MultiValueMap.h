@@ -25,6 +25,8 @@
 #include <utility>
 #include <memory>
 #include <type_traits>
+#include <limits>
+#include <list>
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/ValueMap.h"
@@ -36,18 +38,26 @@ namespace taffo {
 template <typename KeyT, typename ValueT>
 class MultiValueMapBase {
 protected:
-  // Type of the list of values associated to the same key (inner lists)
-  using ValueListKeyT = llvm::SmallVector<llvm::AssertingVH<llvm::Value>, 2>;
+  struct KeyListItemT;
+
   // Type of the list of the groups of values associated to each key
-  using ValueListKeyStorageT = llvm::SmallVector<std::unique_ptr<ValueListKeyT>, 0>;
+  using KeyListT = std::list<KeyListItemT>;
+  
+  struct KeyListItemT {
+    std::unique_ptr<ValueT> Value;
+    KeyT Key;
+    typename KeyListT::iterator TagIt;
+    long long OrderIdx = std::numeric_limits<long long>::max();
+    
+    bool isTag() const { return bool(Value); };
+  };
+  
   // Index that maps each value to the list where it is contained
-  using SingleValueIndexT = llvm::ValueMap<KeyT, ValueListKeyT *>;
-  // Map from each value list to the mapped objects
-  using ValueListToValueMapT = llvm::DenseMap<ValueListKeyT *, std::unique_ptr<ValueT>>;
+  using SingleValueIndexT = llvm::ValueMap<KeyT, typename KeyListT::iterator>;
 
   SingleValueIndexT Index;
-  ValueListKeyStorageT ValueListsStorage;  // outer list
-  ValueListToValueMapT ValueListsToValues;
+  KeyListT KeyList;
+  long long OrderIdxSpacing = 0x100000;
 };
 
 
@@ -58,119 +68,73 @@ class MultiValueMapIterator :
                                    typename BaseT::mapped_type>> {
   using KeyT = typename BaseT::key_type;
   using MappedT = typename BaseT::mapped_type;
-  using InnerListT = typename std::conditional<
-      isConst, const typename BaseT::ValueListKeyT,
-      typename BaseT::ValueListKeyT>::type;
-  using InnerListItT = typename std::conditional<
-      isConst, typename BaseT::ValueListKeyT::const_iterator,
-      typename BaseT::ValueListKeyT::iterator>::type;
-  using OuterListT = typename std::conditional<
-      isConst, const typename BaseT::ValueListKeyStorageT,
-      typename BaseT::ValueListKeyStorageT>::type;
-  using OuterListItT = typename std::conditional<
-      isConst, typename BaseT::ValueListKeyStorageT::const_iterator,
-      typename BaseT::ValueListKeyStorageT::iterator>::type;
+  using KeyListT = typename std::conditional<
+      isConst, const typename BaseT::KeyListT,
+      typename BaseT::KeyListT>::type;
+  using KeyListItT = typename std::conditional<
+      isConst, typename BaseT::KeyListT::const_iterator,
+      typename BaseT::KeyListT::iterator>::type;
   using ValueT = typename std::conditional<
       isConst, const std::pair<KeyT, MappedT>, std::pair<KeyT, MappedT>>::type;
-  
-  BaseT *Parent = nullptr;
-  // IOuterList can be nullptr if not known. At end of list it must point to
-  // the end of the list.
-  mutable OuterListItT IOuterList = nullptr;
-  // nullptr only when at end of list
-  //   Would be fully redundant with IOuterList if not for the unique_ptr
-  // that stores each list.
-  InnerListT *InnerList = nullptr;
-  // Can be nullptr if not known or if at end of list.
-  mutable InnerListItT IInnerList = nullptr;
-  // nullptr only when at end of list
-  KeyT Key = nullptr;
-  
-  // In summary there are 3 types of lazy iterators, each of which allows
-  // O(1) iteration of a different subset of the entire collection.
-  // Converting from one lazy mode to the other is typically a O(n) process.
-  // (1) IOuterList == null, IInnerList == null
-  //     O(1) access just to one key
-  // (2) IOuterList == null
-  //     O(1) iteration to the list of Value* keys associated to the same value
-  // (3) IOuterList != null
-  //     O(1) iteration through the entire collection
-  
-  // give MultiValueMap access to isLazy()
+      
   template <typename T, typename U> friend class MultiValueMap;
   
-private:
-  inline bool hasInnerListIt() const {
-    return hasOuterListIt() || Key == nullptr || IInnerList != nullptr;
-  }
-  inline bool hasOuterListIt() const {
-    return IOuterList != nullptr;
-  }
+  BaseT *Parent = nullptr;
+  mutable KeyListItT IKeyList;
   
-  void makeInnerListIt() const {
-    if (hasInnerListIt())
-      return;
-    IInnerList = InnerList->begin();
-    for (; IInnerList != InnerList->end(); IInnerList++) {
-      if (*IInnerList == Key)
-        break;
-    }
+  inline void skipTagForward() const {
+    if (IKeyList != Parent->KeyList.end() && IKeyList->isTag())
+      IKeyList++;
   }
-  void makeOuterListIt() const {
-    if (hasOuterListIt())
-      return;
-    makeInnerListIt();
-    if (Key == nullptr) {
-      IOuterList = Parent->ValueListsStorage.end();
-    } else {
-      IOuterList = Parent->ValueListsStorage.begin();
-      for (; IOuterList != Parent->ValueListsStorage.end(); IOuterList++) {
-        if (IOuterList->get() == InnerList)
-          break;
-      }
-    }
+  inline void skipTagBack() {
+    if (IKeyList != Parent->KeyList.begin() && IKeyList->isTag())
+      IKeyList--;
   }
-  
+  inline KeyListItT insertionPointerForNewList() {
+    if (IKeyList == Parent->KeyList.begin() || IKeyList == Parent->KeyList.end())
+      return IKeyList;
+    auto Next = IKeyList;
+    auto Prev = IKeyList;
+    --Prev;
+    if (Prev->isTag())
+      return Prev;
+    while (Next != Parent->KeyList.end() && !Next->isTag())
+      Next++;
+    return Next;
+  }
+  inline std::pair<KeyListItT, KeyListItT> leftInsertionPointer() {
+    if (IKeyList == Parent->KeyList.begin())
+      return {IKeyList, IKeyList};
+    auto Prev = IKeyList;
+    auto Next = IKeyList;
+    --Prev;
+    if (Prev->isTag() && Prev != Parent->KeyList.begin()) {
+      --Prev;
+      --Next;
+    }
+    return {Next, Prev->TagIt};
+  }
+  inline std::pair<KeyListItT, KeyListItT> rightInsertionPointer() {
+    if (IKeyList == Parent->KeyList.end())
+      return {IKeyList, IKeyList};
+    skipTagForward();
+    return {IKeyList, IKeyList->TagIt};
+  }
+
 public:
-  MultiValueMapIterator(BaseT& Parent, InnerListItT IInnerList,
-                        OuterListItT IOuterList) :
-      Parent(&Parent), IOuterList(IOuterList), IInnerList(IInnerList) {
-    if (IOuterList != Parent.ValueListsStorage.end()) {
-      InnerList = IOuterList->get();
-      assert(IInnerList != InnerList->end());
-      Key = *IInnerList;
-    } else {
-      InnerList = nullptr;
-      Key = nullptr;
-    }
+  MultiValueMapIterator(BaseT& Parent, KeyListItT IKeyList) :
+      Parent(&Parent), IKeyList(IKeyList) { }
+  MultiValueMapIterator(BaseT& Parent, KeyT Key) :
+      Parent(&Parent) {
+    IKeyList = Parent.Index[Key];
   }
-  // convenience initializer. Points at first value in list pointed to by
-  // IOuterList (of course if it is not at the end of the list).
-  MultiValueMapIterator(BaseT& Parent, OuterListItT IOuterList) :
-      Parent(&Parent), IOuterList(IOuterList) {
-    if (IOuterList != Parent.ValueListsStorage.end()) {
-      InnerList = IOuterList->get();
-      IInnerList = InnerList->begin();
-      Key = *IInnerList;
-    } else {
-      InnerList = nullptr;
-      Key = nullptr;
-    }
-  }
-  /// Lazy initializer
-  MultiValueMapIterator(BaseT& Parent, KeyT Key, InnerListT *InnerList) :
-      Parent(&Parent), IOuterList(nullptr), InnerList(InnerList),
-      IInnerList(nullptr), Key(Key) {}
   MultiValueMapIterator(MultiValueMapIterator const &Other) = default;
   MultiValueMapIterator(MultiValueMapIterator&&) = default;
   MultiValueMapIterator() = default;
   
   MultiValueMapIterator& operator=(const MultiValueMapIterator& Other) {
     Parent = Other.Parent;
-    IOuterList = Other.IOuterList;
-    InnerList = Other.InnerList;
-    IInnerList = Other.IInnerList;
-    Key = Other.Key;
+    IKeyList = Other.IKeyList;
     return *this;
   };
   
@@ -184,12 +148,9 @@ public:
   };
                         
   MultiValueMapIterator& operator++() {
-    makeInnerListIt();
-    IInnerList++;
-    if (IInnerList == InnerList->end()) {
-      return skip();
-    }
-    Key = *IInnerList;
+    skipTagForward();
+    IKeyList++;
+    skipTagForward();
     return *this;
   }
   MultiValueMapIterator operator++(int) {
@@ -199,15 +160,8 @@ public:
   }
   
   MultiValueMapIterator& operator--() {
-    makeInnerListIt();
-    if (IInnerList == nullptr || IInnerList == InnerList->begin()) {
-      makeOuterListIt();
-      IOuterList--;
-      IInnerList = IOuterList->get()->end();
-      InnerList = IOuterList->get();
-    }
-    IInnerList--;
-    Key = *IInnerList;
+    IKeyList--;
+    skipTagBack();
     return *this;
   }
   MultiValueMapIterator operator--(int) {
@@ -217,52 +171,49 @@ public:
   }
   
   MultiValueMapIterator& skip() {
-    makeOuterListIt();
-    IOuterList++;
-    if (IOuterList != Parent->ValueListsStorage.end()) {
-      IInnerList = IOuterList->get()->begin();
-      InnerList = IOuterList->get();
-      Key = *IInnerList;
-      return *this;
-    }
-    IInnerList = nullptr;
-    InnerList = nullptr;
-    Key = nullptr;
+    skipTagForward();
+    while (IKeyList != Parent->KeyList.end() && !IKeyList->isTag())
+      IKeyList++;
+    skipTagForward();
     return *this;
   }
   MultiValueMapIterator& reverseSkip() {
-    makeOuterListIt();
-    IOuterList--;
-    IInnerList = IOuterList->get()->begin();
-    InnerList = IOuterList->get();
+    skipTagForward();
+    IKeyList = IKeyList->TagIt;
+    if (IKeyList == Parent->KeyList.begin()) {
+      skipTagForward();
+      return;
+    }
+    --IKeyList;
+    IKeyList = IKeyList->TagIt;
+    skipTagForward();
     return *this;
   }
   
   bool operator==(const MultiValueMapIterator &RHS) const {
     if (this == &RHS)
       return true;
-    return RHS.Key == Key;
+    skipTagForward();
+    RHS.skipTagForward();
+    return RHS.IKeyList == IKeyList;
   }
   bool operator!=(const MultiValueMapIterator &RHS) const {
     return !(*this == RHS);
   }
   ValueTypeProxy operator*() const {
-    MappedT& V = *((Parent->ValueListsToValues.find(InnerList))->second);
-    return ValueTypeProxy{Key, V};
+    skipTagForward();
+    MappedT& V = *(IKeyList->TagIt->Value.get());
+    return ValueTypeProxy{IKeyList->Key, V};
   }
   ValueTypeProxy operator->() const {
     return operator*();
   }
   
   bool operator<=(const MultiValueMapIterator& RHS) const {
-    if (RHS.Key == Key)
+    skipTagForward();
+    if (RHS.IKeyList == IKeyList)
       return true;
-    if (RHS.InnerList == InnerList) {
-      makeInnerListIt();
-      return IInnerList <= RHS.IInnerList;
-    }
-    makeOuterListIt();
-    return IOuterList <= RHS.IOuterList;
+    return IKeyList->OrderIdx <= RHS.IKeyList->OrderIdx;
   }
   bool operator<(const MultiValueMapIterator& RHS) const {
     return !(RHS <= *this);
@@ -280,14 +231,12 @@ template <typename KeyT, typename ValueT>
 class MultiValueMap : public MultiValueMapBase<KeyT, ValueT> {
   template <typename T, bool C> friend class MultiValueMapIterator;
   
-  using ValueListKeyT =
-      typename MultiValueMapBase<KeyT, ValueT>::ValueListKeyT;
-  using ValueListKeyStorageT =
-      typename MultiValueMapBase<KeyT, ValueT>::ValueListKeyStorageT;
+  using KeyListT =
+      typename MultiValueMapBase<KeyT, ValueT>::KeyListT;
+  using KeyListItemT =
+      typename MultiValueMapBase<KeyT, ValueT>::KeyListItemT;
   using SingleValueIndexT =
       typename MultiValueMapBase<KeyT, ValueT>::SingleValueIndexT;
-  using ValueListToValueMapT =
-      typename MultiValueMapBase<KeyT, ValueT>::ValueListToValueMapT;
   
 public:
   using key_type = KeyT;
@@ -304,13 +253,12 @@ public:
   MultiValueMap &operator=(const MultiValueMap &) = delete;
   MultiValueMap &operator=(MultiValueMap &&) = delete;
   
-  bool empty() const { return !this->ValueListsToValues.size(); }
+  bool empty() const { return this->KeyList.empty(); }
   unsigned size() const { return this->Index.size(); }
   
   void clear() {
-    this->ValueListsToValues.clear();
+    this->KeyList.clear();
     this->Index.clear();
-    this->ValueListsStorage.clear();
   }
   
   size_type count(const KeyT& K) const {
@@ -321,72 +269,89 @@ public:
   using const_iterator = MultiValueMapIterator<const MultiValueMap<KeyT, ValueT>, true>;
   
   inline iterator begin() {
-    if (this->ValueListsStorage.empty())
-      return end();
-    return iterator(*this,
-        this->ValueListsStorage.begin()->get()->begin(),
-        this->ValueListsStorage.begin());
+    return iterator(*this, this->KeyList.begin());
   }
   inline iterator end() {
-    return iterator(*this,
-        nullptr,
-        this->ValueListsStorage.end());
+    return iterator(*this, this->KeyList.end());
   }
   inline const_iterator begin() const {
-    if (this->ValueListsStorage.empty())
-      return end();
-    return const_iterator(*this,
-        this->ValueListsStorage.begin()->get()->begin(),
-        this->ValueListsStorage.begin());
+    return const_iterator(*this, this->KeyList.begin());
   }
   inline const_iterator end() const {
-    return const_iterator(*this,
-        nullptr,
-        this->ValueListsStorage.end());
+    return const_iterator(*this, this->KeyList.end());
   }
   
   iterator find(const KeyT& K) {
     auto VListIt = this->Index.find(K);
     if (VListIt == this->Index.end())
       return end();
-    return iterator(*this, K, VListIt->second);
+    return iterator(*this, VListIt->second);
   }
   ValueT lookup(const KeyT& K) {
     auto VListIt = this->Index.find(K);
     if (VListIt == this->Index.end())
       return ValueT();
-    return *(this->ValueListsToValues.find(*VListIt)->get());
+    return *(VListIt->second->TagIt->Value.get());
   }
   ValueT& operator[](const KeyT& K) {
     auto VListIt = this->Index.find(K);
     assert(VListIt != this->Index.end());
-    return *(this->ValueListsToValues.find(VListIt->second)->second.get());
+    return *(VListIt->second->TagIt->Value.get());
   }
   
   /// Get the list of keys associated to the same value as a given key.
   /// @returns false if the key is not in the map.
   bool getAssociatedValues(KeyT K, llvm::SmallVectorImpl<KeyT>& OutV) {
-    auto ListI = this->Index.find(K);
-    if (ListI == this->Index.end())
+    auto I = this->find(K);
+    if (I == this->end())
       return false;
-    ValueListKeyT& List = *(ListI->second);
-    for (KeyT K: List)
-      OutV.push_back(K);
+    auto ListI = I.IKeyList->TagIt;
+    ++ListI;
+    while (ListI != this->KeyList.end() && !ListI->isTag()) {
+      OutV.push_back(ListI->Key);
+      ListI++;
+    }
     return true;
   }
   
+private:
+  long long orderIdxForNewElem(typename KeyListT::iterator Pos) {
+    // TODO: CATCH OVERFLOWS/UNDERFLOWS/BAD IDX ALLOCATIONS!!!!
+    auto Next = Pos;
+    if (Next == this->KeyList.begin()) {
+      if (Next != this->KeyList.end())
+        return Next->OrderIdx - this->OrderIdxSpacing;
+      else
+        return 0;
+    }
+    auto Prev = --Pos;
+    if (Next == this->KeyList.end())
+      return Prev->OrderIdx + this->OrderIdxSpacing;
+    return (Prev->OrderIdx + Next->OrderIdx) / 2;
+  }
+
+public:
   std::pair<iterator, bool> insert(iterator P, const KeyT& K, const ValueT &V) {
     iterator Existing = this->find(K);
     if (Existing != this->end())
       return std::make_pair(Existing, false);
-    P.makeOuterListIt();
-    ValueListKeyT *NewVL = new ValueListKeyT{K};
-    auto NewI = this->ValueListsStorage.insert(P.IOuterList,
-        std::unique_ptr<ValueListKeyT>(NewVL));
-    this->Index[K] = NewVL;
-    this->ValueListsToValues[NewVL] =
-      std::unique_ptr<ValueT>(new ValueT(V));
-    iterator ResIt = iterator(*this, NewVL->begin(), NewI);
+      
+    auto FixedP = P.insertionPointerForNewList();
+    KeyListItemT NewTag;
+    NewTag.Value.reset(new ValueT(V));
+    NewTag.OrderIdx = orderIdxForNewElem(FixedP);
+    auto TagIt = this->KeyList.insert(FixedP, std::move(NewTag));
+    TagIt->TagIt = TagIt;
+    
+    KeyListItemT NewItem;
+    NewItem.Key = K;
+    NewItem.TagIt = TagIt;
+    NewItem.OrderIdx = orderIdxForNewElem(FixedP);
+    auto ItmIt = this->KeyList.insert(FixedP, std::move(NewItem));
+    
+    this->Index[K] = ItmIt;
+    
+    iterator ResIt = iterator(*this, ItmIt);
     return std::make_pair(ResIt, true);
   }
   /// Inserts key,value pair into the map if the key isn't already in the map.
@@ -425,11 +390,14 @@ public:
       return std::make_pair(P, false);
     if (this->Index.find(K) != this->Index.end())
       return std::make_pair(P, false);
-    P.makeInnerListIt();
-    P.IInnerList = P.InnerList->insert(P.IInnerList, K);
-    P.Key = K;
-    this->Index[K] = P.InnerList;
-    return std::make_pair(P, true);
+    auto InsertP = P.rightInsertionPointer();
+    KeyListItemT NewItem;
+    NewItem.Key = K;
+    NewItem.TagIt = InsertP.second;
+    NewItem.OrderIdx = orderIdxForNewElem(InsertP.first);
+    auto ItmIt = this->KeyList.insert(InsertP.first, std::move(NewItem));
+    this->Index[K] = ItmIt;
+    return std::make_pair(iterator(*this, ItmIt), true);
   }
   /// Adds a key to an existing key list / value association.
   /// If P points between two keys associated to the same value, K is associated
@@ -444,18 +412,14 @@ public:
       return std::make_pair(P, false);
     if (this->Index.find(K) != this->Index.end())
       return std::make_pair(P, false);
-    P.makeInnerListIt();
-    if (!P.InnerList || P.IInnerList == P.InnerList->begin()) {
-      // go back to the end of the previous list
-      P.makeOuterListIt();
-      P.IOuterList--;
-      P.InnerList = P.IOuterList->get();
-      P.IInnerList = P.InnerList->end();
-    }
-    P.IInnerList = P.InnerList->insert(P.IInnerList, K);
-    P.Key = K;
-    this->Index[K] = P.InnerList;
-    return std::make_pair(P, true);
+    auto InsertP = P.leftInsertionPointer();
+    KeyListItemT NewItem;
+    NewItem.Key = K;
+    NewItem.TagIt = InsertP.second;
+    NewItem.OrderIdx = orderIdxForNewElem(InsertP.first);
+    auto ItmIt = this->KeyList.insert(InsertP.first, std::move(NewItem));
+    this->Index[K] = ItmIt;
+    return std::make_pair(iterator(*this, ItmIt), true);
   }
   
   template<typename InputIt>
@@ -475,13 +439,13 @@ public:
   }
   
   iterator eraseAll(iterator I) {
-    I.makeOuterListIt();
-    for (auto K: *(I.InnerList)) {
-      this->Index.erase(K);
+    auto Ptr = I.IKeyList->TagIt;
+    Ptr = this->KeyList.erase(Ptr);
+    while (Ptr != this->KeyList.end() && !Ptr->isTag()) {
+      this->Index.erase(Ptr->Key);
+      Ptr = this->KeyList.erase(Ptr);
     }
-    auto NewIOuter = this->ValueListsStorage.erase(I.IOuterList);
-    this->ValueListsToValues.erase(I.InnerList);
-    return iterator(*this, NewIOuter);
+    return iterator(*this, Ptr);
   }
   bool eraseAll(const KeyT& K) {
     iterator KI = find(K);
@@ -492,18 +456,17 @@ public:
   }
   
   iterator erase(iterator I) {
-    I.makeInnerListIt();
-    if (I.InnerList->size() == 1) {
-      // obliterate the entire list
-      I.makeOuterListIt();
-      auto NewIOuter = this->ValueListsStorage.erase(I.IOuterList);
-      this->ValueListsToValues.erase(I.InnerList);
-      this->Index.erase(I.Key);
-      return iterator(*this, NewIOuter);
+    I.skipTagForward();
+    auto Itm = I.IKeyList;
+    auto Tag = Itm->TagIt;
+    this->Index.erase(Itm->Key);
+    Itm = this->KeyList.erase(Itm);
+    auto Prev = Itm;
+    --Prev;
+    if (Itm->isTag() && Prev == Tag) {
+      this->KeyList.erase(Tag);
     }
-    // just remove the value
-    I.IInnerList = I.InnerList->erase(I.IInnerList);
-    return I;
+    return iterator(*this, Itm);
   }
   bool erase(const KeyT& K) {
     iterator KI = find(K);
@@ -513,10 +476,13 @@ public:
     return true;
   }
   
-  void print() {
-    for (auto v: *this) {
+  void dump() {
+    for (auto& V: this->KeyList) {
       #define DEBUG_TYPE "MultiValueMap"
-      LLVM_DEBUG(llvm::dbgs() << "K=" << v.first << " KeyVList=" << this->Index[v.first] << " V=" << &(v.second) << "\n");
+      if (V.isTag())
+        LLVM_DEBUG(llvm::dbgs() << "[TAG] V=" << V.Value.get() << "\n");
+      else
+        LLVM_DEBUG(llvm::dbgs() << "[ITM] K=" << V.Key << " O=" << V.OrderIdx << "\n");
       #undef DEBUG_TYPE
     }
   }
