@@ -35,7 +35,23 @@
 namespace taffo {
 
 
-template <typename KeyT, typename ValueT>
+template <typename KeyT>
+struct MultiValueMapConfig {
+  // All methods will be called with a first argument of type ExtraData.  The
+  // default implementations in this class take a templated first argument so
+  // that users' subclasses can use any type they want without having to
+  // override all the defaults.
+  struct ExtraData {};
+
+  template<typename ExtraDataT>
+  static void onRAUW(const ExtraDataT & /*Data*/, KeyT /*Old*/, KeyT /*New*/) {}
+  template<typename ExtraDataT>
+  static void onDelete(const ExtraDataT &/*Data*/, KeyT /*Old*/) {}
+};
+
+
+template <typename KeyT, typename ValueT,
+    typename ConfigT=MultiValueMapConfig<KeyT> >
 class MultiValueMapBase {
 protected:
   struct KeyListItemT;
@@ -52,12 +68,21 @@ protected:
     bool isTag() const { return bool(Value); };
   };
   
+  struct SingleValueIndexConfig : public llvm::ValueMapConfig<KeyT> {
+    using ExtraData = MultiValueMapBase<KeyT, ValueT, ConfigT>*;
+    static void onRAUW(const ExtraData& Data, KeyT OldK, KeyT NewK);
+    static void onDelete(const ExtraData& Data, KeyT K);
+  };
+  
   // Index that maps each value to the list where it is contained
-  using SingleValueIndexT = llvm::ValueMap<KeyT, typename KeyListT::iterator>;
+  using SingleValueIndexT = llvm::ValueMap<KeyT, typename KeyListT::iterator,
+      SingleValueIndexConfig>;
 
   SingleValueIndexT Index;
   KeyListT KeyList;
   long long OrderIdxSpacing = 0x100000;
+  
+  MultiValueMapBase() : Index(this) {}
 };
 
 
@@ -77,7 +102,7 @@ class MultiValueMapIterator :
   using ValueT = typename std::conditional<
       isConst, const std::pair<KeyT, MappedT>, std::pair<KeyT, MappedT>>::type;
       
-  template <typename T, typename U> friend class MultiValueMap;
+  template <typename T, typename U, typename C> friend class MultiValueMap;
   
   BaseT *Parent = nullptr;
   mutable KeyListItT IKeyList;
@@ -227,16 +252,21 @@ public:
 };
 
 
-template <typename KeyT, typename ValueT>
-class MultiValueMap : public MultiValueMapBase<KeyT, ValueT> {
+template <typename KeyT, typename ValueT,
+    typename ConfigT=MultiValueMapConfig<KeyT> >
+class MultiValueMap : public MultiValueMapBase<KeyT, ValueT, ConfigT> {
   template <typename T, bool C> friend class MultiValueMapIterator;
+  friend struct MultiValueMapBase<KeyT, ValueT, ConfigT>::SingleValueIndexConfig;
   
   using KeyListT =
-      typename MultiValueMapBase<KeyT, ValueT>::KeyListT;
+      typename MultiValueMapBase<KeyT, ValueT, ConfigT>::KeyListT;
   using KeyListItemT =
-      typename MultiValueMapBase<KeyT, ValueT>::KeyListItemT;
+      typename MultiValueMapBase<KeyT, ValueT, ConfigT>::KeyListItemT;
   using SingleValueIndexT =
-      typename MultiValueMapBase<KeyT, ValueT>::SingleValueIndexT;
+      typename MultiValueMapBase<KeyT, ValueT, ConfigT>::SingleValueIndexT;
+  
+protected:
+  typename ConfigT::ExtraData Data;
   
 public:
   using key_type = KeyT;
@@ -244,7 +274,8 @@ public:
   using value_type = std::pair<KeyT, ValueT>;
   using size_type = unsigned;
   
-  MultiValueMap() = default;
+  MultiValueMap() {}
+  MultiValueMap(typename ConfigT::ExtraData& Data) : Data(Data) {}
   
   // Disable copy & move because they're not implemented yet, and are currently
   // not worth implementing
@@ -265,8 +296,8 @@ public:
     return this->Index.find(K) != this->Index.end();
   }
   
-  using iterator = MultiValueMapIterator<MultiValueMap<KeyT, ValueT>>;
-  using const_iterator = MultiValueMapIterator<const MultiValueMap<KeyT, ValueT>, true>;
+  using iterator = MultiValueMapIterator<MultiValueMap<KeyT, ValueT, ConfigT>>;
+  using const_iterator = MultiValueMapIterator<const MultiValueMap<KeyT, ValueT, ConfigT>, true>;
   
   inline iterator begin() {
     return iterator(*this, this->KeyList.begin());
@@ -477,16 +508,61 @@ public:
   }
   
   void dump() {
+    #define DEBUG_TYPE "MultiValueMap"
     for (auto& V: this->KeyList) {
-      #define DEBUG_TYPE "MultiValueMap"
       if (V.isTag())
         LLVM_DEBUG(llvm::dbgs() << "[TAG] V=" << V.Value.get() << "\n");
       else
         LLVM_DEBUG(llvm::dbgs() << "[ITM] K=" << V.Key << " O=" << V.OrderIdx << "\n");
-      #undef DEBUG_TYPE
     }
+    LLVM_DEBUG(llvm::dbgs() << "[[INDEX]]\n");
+    for (auto I = this->Index.begin(); I != this->Index.end(); ++I) {
+      LLVM_DEBUG(llvm::dbgs() << "V=" << I->first << "\n");
+    }
+    #undef DEBUG_TYPE
   }
 };
+
+template <typename KeyT, typename ValueT, typename ConfigT>
+void MultiValueMapBase<KeyT, ValueT, ConfigT>::SingleValueIndexConfig::onRAUW(
+    const MultiValueMapBase<KeyT, ValueT, ConfigT>::
+      SingleValueIndexConfig::ExtraData& Data,
+    KeyT OldK, KeyT NewK)
+{
+  MultiValueMap<KeyT, ValueT, ConfigT> &MVM =
+      *static_cast<MultiValueMap<KeyT, ValueT, ConfigT>*>(Data);
+
+  ConfigT::onRAUW(MVM.Data, OldK, NewK);
+
+  auto OldKIt = MVM.find(OldK);
+  auto NewKIt = MVM.find(NewK);
+  if (NewKIt != MVM.end()) {
+    /* the new key is in the map; erase it so that we can replace its value
+     * with the value of the old key */
+    MVM.erase(NewKIt);
+  }
+  if (OldKIt != MVM.end()) {
+    /* associate the new key with same value as the old key */
+    MVM.insertRight(OldKIt, NewK);
+    MVM.erase(OldKIt);
+  }
+}
+
+template <typename KeyT, typename ValueT, typename ConfigT>
+void MultiValueMapBase<KeyT, ValueT, ConfigT>::SingleValueIndexConfig::onDelete(
+    const MultiValueMapBase<KeyT, ValueT, ConfigT>::
+      SingleValueIndexConfig::ExtraData& Data,
+    KeyT K)
+{
+  MultiValueMap<KeyT, ValueT, ConfigT> &MVM =
+      *static_cast<MultiValueMap<KeyT, ValueT, ConfigT>*>(Data);
+      
+  ConfigT::onDelete(MVM.Data, K);
+  
+  auto KIt = MVM.find(K);
+  if (KIt != MVM.end())
+    MVM.erase(KIt);
+}
 
 
 }
