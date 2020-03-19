@@ -10,6 +10,7 @@ add_library(TaffoUtils
   TypeUtils.h
   TypeUtils.cpp
   MultiValueMap.h
+  handle.h
 )
 
 set_property(TARGET TaffoUtils PROPERTY CXX_STANDARD 11)
