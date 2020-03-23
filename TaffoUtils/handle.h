@@ -47,6 +47,8 @@ private:
   HandledFunction() {
     handledFunction.emplace_back("sin");
     handledFunction.emplace_back("cos");
+    handledFunction.emplace_back("_ZSt3sin");
+    handledFunction.emplace_back("_ZSt3cos");
   }
 
   /*get an instance of HandledFunction
