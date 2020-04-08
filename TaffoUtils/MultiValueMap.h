@@ -182,7 +182,7 @@ public:
     IKeyList = IKeyList->TagIt;
     if (IKeyList == Parent->KeyList.begin()) {
       skipTagForward();
-      return;
+      return nullptr;
     }
     --IKeyList;
     IKeyList = IKeyList->TagIt;

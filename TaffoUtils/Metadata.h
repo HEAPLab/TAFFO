@@ -27,6 +27,7 @@
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Constants.h"
 #include "InputInfo.h"
+#include "../PrecisionAnalysis/TaffoPRA/ErrorInfo.hpp"
 
 #define INPUT_INFO_METADATA    "taffo.info"
 #define FUNCTION_ARGS_METADATA "taffo.funinfo"
@@ -46,6 +47,10 @@
  * original annotation as data flow node counts.
  * Used by VRA to determine the metadata to use as a starting point. */
 #define INIT_WEIGHT_METADATA   "taffo.initweight"
+
+
+#define PRA_ERROR_METADATA "taffo.praerr"
+#define PRA_STRUCT_METADATA "taffo.prastruct"
 
 namespace mdutils {
 
@@ -173,6 +178,10 @@ public:
   /// if it is a target. Returns an empty Optional if it is not a target.
   static llvm::Optional<llvm::StringRef> retrieveTargetMetadata(const llvm::Instruction &I);
   static llvm::Optional<llvm::StringRef> retrieveTargetMetadata(const llvm::GlobalObject &V);
+
+
+  /// Save infos about error computed in PRA
+  void savePRAErrorMetadata(llvm::Value *u, const taffo::GenericErrorInfo *mdinfo);
 
 protected:
   llvm::DenseMap<llvm::MDNode *, std::shared_ptr<TType> > TTypes;
