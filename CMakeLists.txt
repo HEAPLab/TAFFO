@@ -12,5 +12,5 @@ add_dependencies(taffo LLVMFloatToFixed TaffoDTA LLVMErrorPropagator TaffoInitia
 
 add_subdirectory(TaffoUtils)
 add_subdirectory(utils)
-add_subdirectory(unittests)
+#add_subdirectory(unittests)
 add_subdirectory(tool)

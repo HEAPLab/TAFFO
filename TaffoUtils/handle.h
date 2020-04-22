@@ -6,10 +6,17 @@
 #include <memory>
 #include <string>
 
+
+
+
 #ifndef TAFFO_HANDLED_FUNCTION
 #define TAFFO_HANDLED_FUNCTION
 
 using namespace llvm;
+
+extern bool EnableMathFunctionsConversionsFlag;
+extern bool EnableMathFunctionSinFlag;
+extern bool EnableMathFunctionCosFlag; 
 
 namespace taffo {
 
@@ -44,11 +51,14 @@ public:
 private:
   /**Constructor the list of handled function
    */
+  const bool enabled(bool b){ return b || EnableMathFunctionsConversionsFlag;
+  }
+
   HandledFunction() {
-    handledFunction.emplace_back("sin");
-    handledFunction.emplace_back("cos");
-    handledFunction.emplace_back("_ZSt3sin");
-    handledFunction.emplace_back("_ZSt3cos");
+    if(enabled(EnableMathFunctionSinFlag)) handledFunction.emplace_back("sin");
+    if(enabled(EnableMathFunctionCosFlag)) handledFunction.emplace_back("cos");
+    if(enabled(EnableMathFunctionSinFlag)) handledFunction.emplace_back("_ZSt3sin");
+    if(enabled(EnableMathFunctionCosFlag)) handledFunction.emplace_back("_ZSt3cos");
   }
 
   /*get an instance of HandledFunction
