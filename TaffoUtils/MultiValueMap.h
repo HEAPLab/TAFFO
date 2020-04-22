@@ -506,6 +506,11 @@ public:
     erase(KI);
     return true;
   }
+  iterator erase(iterator B, iterator E) {
+    while (B != E)
+      B = this->erase(B);
+    return E;
+  }
   
   void dump() {
     #define DEBUG_TYPE "MultiValueMap"
