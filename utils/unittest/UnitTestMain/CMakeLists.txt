@@ -1,8 +1,8 @@
-add_llvm_library(gtest_main
+add_llvm_library(taffo_gtest_main
   TestMain.cpp
 
   LINK_LIBS
-  gtest
+  taffo_gtest
 
   LINK_COMPONENTS
   Support # Depends on llvm::cl
@@ -10,8 +10,8 @@ add_llvm_library(gtest_main
   # This library is not meant to be in the install tree, only the build tree.
   BUILDTREE_ONLY
   )
-set_property(TARGET gtest_main PROPERTY CXX_STANDARD 11)
-set_property(TARGET gtest_main PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET taffo_gtest_main PROPERTY CXX_STANDARD 11)
+set_property(TARGET taffo_gtest_main PROPERTY CXX_STANDARD_REQUIRED ON)
 if (NOT LLVM_ENABLE_RTTI)
-  target_compile_options(gtest_main PRIVATE -fno-rtti)
+  target_compile_options(taffo_gtest_main PRIVATE -fno-rtti)
 endif()
