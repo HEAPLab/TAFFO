@@ -135,7 +135,7 @@ namespace mdutils {
     class FloatType : public TType {
     public:
         enum FloatStandard {
-            Float_half, /*16-bit floating-point value*/
+            Float_half=0, /*16-bit floating-point value*/
             Float_float,    /*32-bit floating-point value*/
             Float_double,    /*64-bit floating-point value*/
             Float_fp128,    /*128-bit floating-point value (112-bit mantissa)*/

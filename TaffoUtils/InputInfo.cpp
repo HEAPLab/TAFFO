@@ -320,6 +320,8 @@ namespace mdutils {
             case Float_ppc_fp128:    /*128-bit floating-point value (two 64-bits)*/
                 llvm_unreachable("Unknown limit for this float type");
         }
+
+        llvm_unreachable("Unknown limit for this float type");
     }
 
     //FIXME: this can give incorrect results if used in corner cases
@@ -383,7 +385,7 @@ namespace mdutils {
         FloatStandard type = static_cast<FloatStandard>(Width);
 
         double GreatestNumber;
-        Metadata *WMD2 = MDN->getOperand(1U).get();
+        Metadata *WMD2 = MDN->getOperand(2U).get();
         GreatestNumber = retrieveDoubleMetadata(WMD2);
 
         return std::unique_ptr<FloatType>(new FloatType(type, GreatestNumber));
