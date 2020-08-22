@@ -1,17 +1,9 @@
-find_package(LLVM REQUIRED CONFIG)
-add_definitions(${LLVM_DEFINITIONS})
-include_directories(
-    ${LLVM_INCLUDE_DIRS}
-    ../TaffoUtils)
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(AddLLVM)
-
 llvm_map_components_to_libnames(llvm_libs
-  #
-  )
+  Core
+)
 
 # this function is mostly copied from AddLLVM.cmake because it assumes that the
-# entire LLVM source is available, even though in our case it might not 
+# entire LLVM source is available, even though in our case it might not
 function(taffo_add_unittest test_suite test_name)
   if( NOT TAFFO_BUILD_TESTS )
     set(EXCLUDE_FROM_ALL ON)
@@ -63,8 +55,9 @@ endfunction()
 
 function(add_taffo_unittest test_dirname)
   taffo_add_unittest(TAFFOUnitTests ${test_dirname} ${ARGN})
+  target_link_libraries(${test_dirname} PRIVATE TaffoUtils)
 endfunction()
 
 add_taffo_unittest(TAFFOUnitTests MultiValueMapTest.cpp)
-target_link_libraries(TAFFOUnitTests PRIVATE TaffoUtils TaffoUtils)
+
 
