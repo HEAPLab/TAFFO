@@ -1,7 +1,3 @@
-find_package(LLVM REQUIRED CONFIG)
-
-include_directories(${LLVM_INCLUDE_DIRS})
-
 add_library(TaffoUtils
   Metadata.h
   Metadata.cpp
