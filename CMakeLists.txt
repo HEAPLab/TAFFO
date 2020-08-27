@@ -8,6 +8,7 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS}
   TaffoUtils)
 include(AddLLVM)
+include(HandleLLVMOptions)
 
 add_subdirectory(Initializer)
 add_subdirectory(RangeAnalysis)
@@ -32,7 +33,6 @@ add_llvm_library(Taffo MODULE
   PLUGIN_TOOL
   opt
 )
-
 
 add_subdirectory(utils)
 add_subdirectory(unittests)
