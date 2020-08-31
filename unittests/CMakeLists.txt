@@ -1,7 +1,3 @@
-llvm_map_components_to_libnames(llvm_libs
-  Core
-)
-
 # this function is mostly copied from AddLLVM.cmake because it assumes that the
 # entire LLVM source is available, even though in our case it might not
 function(taffo_add_unittest test_suite test_name)
@@ -32,7 +28,6 @@ function(taffo_add_unittest test_suite test_name)
 
   set(LLVM_REQUIRES_RTTI OFF)
 
-  list(APPEND LLVM_LINK_COMPONENTS Support) # gtest needs it for raw_ostream
   add_executable(${test_name} ${ARGN})
   set_property(TARGET ${test_name} PROPERTY CXX_STANDARD 11)
   set_property(TARGET ${test_name} PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -44,7 +39,7 @@ function(taffo_add_unittest test_suite test_name)
   # libpthreads overrides some standard library symbols, so main
   # executable must be linked with it in order to provide consistent
   # API for all shared libaries loaded by this executable.
-  target_link_libraries(${test_name} PRIVATE ${llvm_libs} taffo_gtest_main taffo_gtest ${LLVM_PTHREAD_LIB})
+  target_link_libraries(${test_name} PRIVATE ${LLVM_LIBRARIES} taffo_gtest_main taffo_gtest ${LLVM_PTHREAD_LIB})
 
   add_dependencies(${test_suite} ${test_name})
   get_target_property(test_suite_folder ${test_suite} FOLDER)
