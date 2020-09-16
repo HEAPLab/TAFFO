@@ -63,8 +63,6 @@ add_llvm_library(taffo_gtest
   # This is a library meant only for the build tree.
   BUILDTREE_ONLY
 )
-set_property(TARGET taffo_gtest PROPERTY CXX_STANDARD 11)
-set_property(TARGET taffo_gtest PROPERTY CXX_STANDARD_REQUIRED ON)
 if (NOT LLVM_ENABLE_RTTI)
   target_compile_options(taffo_gtest PRIVATE -fno-rtti)
 endif()

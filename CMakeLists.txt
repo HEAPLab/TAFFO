@@ -10,6 +10,10 @@ include_directories(${LLVM_INCLUDE_DIRS}
 include(AddLLVM)
 include(HandleLLVMOptions)
 
+# to be kept in sync with LLVM!
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_subdirectory(Initializer)
 add_subdirectory(RangeAnalysis)
 add_subdirectory(DataTypeAlloc)

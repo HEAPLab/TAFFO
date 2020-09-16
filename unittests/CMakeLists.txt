@@ -29,8 +29,6 @@ function(taffo_add_unittest test_suite test_name)
   set(LLVM_REQUIRES_RTTI OFF)
 
   add_executable(${test_name} ${ARGN})
-  set_property(TARGET ${test_name} PROPERTY CXX_STANDARD 11)
-  set_property(TARGET ${test_name} PROPERTY CXX_STANDARD_REQUIRED ON)
   if (NOT LLVM_ENABLE_RTTI)
     target_compile_options(${test_name} PRIVATE -fno-rtti)
   endif()
