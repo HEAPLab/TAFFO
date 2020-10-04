@@ -41,6 +41,7 @@
 #define ORIGINAL_FUN_METADATA  "taffo.originalCall"
 #define CLONED_FUN_METADATA    "taffo.equivalentChild"
 #define SOURCE_FUN_METADATA    "taffo.sourceFunction"
+#define INDIRECT_METADATA      "taffo.indirectFunction"
 
 /* Integer which specifies the distance of the metadata from the
  * original annotation as data flow node counts.
