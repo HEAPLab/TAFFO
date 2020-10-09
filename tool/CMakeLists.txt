@@ -37,8 +37,6 @@ add_executable(taffo-instmix
   InstructionMix.cpp
 )
 target_link_libraries(taffo-instmix ${llvm_libs})
-set_property(TARGET taffo-instmix PROPERTY CXX_STANDARD 11)
-set_property(TARGET taffo-instmix PROPERTY CXX_STANDARD_REQUIRED ON)
 if (NOT LLVM_ENABLE_RTTI)
   target_compile_options(taffo-instmix PRIVATE -fno-rtti)
 endif()
@@ -52,8 +50,6 @@ add_executable(taffo-mlfeat
   TaffoMLFeaturesAnalysis.h
 )
 target_link_libraries(taffo-mlfeat ${llvm_libs} TaffoUtils)
-set_property(TARGET taffo-mlfeat PROPERTY CXX_STANDARD 11)
-set_property(TARGET taffo-mlfeat PROPERTY CXX_STANDARD_REQUIRED ON)
 if (NOT LLVM_ENABLE_RTTI)
   target_compile_options(taffo-mlfeat PRIVATE -fno-rtti)
 endif()

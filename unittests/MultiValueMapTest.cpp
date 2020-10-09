@@ -26,7 +26,9 @@ protected:
       BitcastV(new BitCastInst(ConstantV, Type::getInt32Ty(Context))),
       AddV(BinaryOperator::CreateAdd(ConstantV, ConstantV)),
       CmpV(new ICmpInst(ICmpInst::Predicate::ICMP_EQ, ConstantV, ConstantV)),
-      SubV(BinaryOperator::CreateSub(ConstantV, ConstantV)) {}
+      SubV(BinaryOperator::CreateSub(ConstantV, ConstantV)) {
+    DebugFlag = true;
+  }
       
   template <typename VMapT, typename ExpListT>
   static bool compareKeysToExpected(VMapT& VVMap, ExpListT& Expected) {
@@ -301,6 +303,38 @@ TEST_F(MultiValueMapTest, EraseAll) {
       {{this->AddV.get(), 10},
        {this->BitcastV.get(), 30}};
   ASSERT_TRUE(comparePairsFromItToExpected(VVMap.begin(), VVMap.end(), Exp));
+}
+
+TEST_F(MultiValueMapTest, RAUWCallback) {
+  struct MVMTestCfg: public MultiValueMapConfig<Value *> {
+    struct ExtraData {
+      Value *ChkOld;
+      Value *ChkNew;
+    };
+    static void onRAUW(const ExtraData& Data, Value *OldK, Value *NewK) {
+      ASSERT_EQ(Data.ChkOld, OldK);
+      ASSERT_EQ(Data.ChkNew, NewK);
+    }
+    static void onDelete(const ExtraData& Data, Value *K) {
+      GTEST_FATAL_FAILURE_("onDelete called, but the operation was RAUW");
+    }
+  };
+
+  MVMTestCfg::ExtraData XData;
+  XData.ChkOld = this->SubV.get();
+  XData.ChkNew = ConstantV;
+  
+  MultiValueMap<Value *, int, MVMTestCfg> VVMap(XData);
+  VVMap.insert(VVMap.end(), {this->AddV.get(), 10});
+  VVMap.insert(VVMap.end(), {this->SubV.get(), 20});
+  VVMap.insert(VVMap.end(), {this->BitcastV.get(), 30});
+  
+  this->SubV->replaceAllUsesWith(ConstantV);
+  
+  auto F = VVMap.find(ConstantV);
+  ASSERT_NE(F, VVMap.end());
+  ASSERT_EQ(F->first, ConstantV);
+  ASSERT_EQ(F->second, 20);
 }
 
 

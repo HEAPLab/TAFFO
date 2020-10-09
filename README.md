@@ -4,7 +4,7 @@
 
 TAFFO is an autotuning framework which tries to replace floating point operations with fixed point operations as much as possible.
 
-It is based on LLVM 8 and has been tested on Linux and macOS (any attempt to compile on Windows or WSL is at your own risk and peril).
+It is based on LLVM 10 and has been tested on Linux and macOS (any attempt to compile on Windows or WSL is at your own risk and peril).
 
 ## How to use TAFFO
 
@@ -28,14 +28,15 @@ Thus, to use TAFFO it is encouraged to follow these steps:
 ### Step 1
 
 Create a build directory, compile and install TAFFO.
-The suggested install directory is `dist` in the `taffo-wrapper` repository.
+The suggested install directory is `dist` in the `TAFFO` repository.
 If you have a single system LLVM version installed you may omit setting the `LLVM_DIR` variable to the path of the LLVM distribution you want to use.
 
-Note that at the moment TAFFO supports only LLVM 8 and that LLVM plugins compiled for a given major version of LLVM cannot be loaded by any other version.
+Note that at the moment TAFFO supports only LLVM 10 and that LLVM plugins compiled for a given major version of LLVM cannot be loaded by any other version.
+If you are building LLVM from sources, you must configure it with `-DLLVM_BUILD_LLVM_DYLIB=ON` and `-DLLVM_LINK_LLVM_DYLIB=ON` for the TAFFO build to succeed.
 
 ```sh
-$ cd /path/to/the/location/of/taffo-wrapper
-$ export LLVM_DIR=/usr/local/llvm-8
+$ cd /path/to/the/location/of/TAFFO
+$ export LLVM_DIR=/usr/lib/llvm-10
 $ mkdir build
 $ cd build
 $ cmake ..
@@ -48,7 +49,7 @@ Use the `setenv.sh` script to set the environment variables used by TAFFO to the
 
 ```sh
 $ cd ..
-$ source ./test/setenv.sh ./dist/usr/local
+$ source ./test/setenv.sh ./dist
 ``` 
 
 ### Step 3
