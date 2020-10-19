@@ -4,6 +4,7 @@ project(Taffo)
 
 find_package(LLVM REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
+cmake_policy(SET CMP0077 NEW)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS}
   TaffoUtils)
@@ -39,5 +40,5 @@ add_llvm_library(Taffo MODULE
 )
 
 add_subdirectory(utils)
-add_subdirectory(unittests)
+#add_subdirectory(unittests)
 add_subdirectory(tool)

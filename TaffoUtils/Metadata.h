@@ -27,7 +27,7 @@
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Constants.h"
 #include "InputInfo.h"
-#include "../PrecisionAnalysis/TaffoPRA/ErrorInfo.hpp"
+//#include "../PrecisionAnalysis/TaffoPRA/ErrorInfo.hpp"
 
 #define INPUT_INFO_METADATA    "taffo.info"
 #define FUNCTION_ARGS_METADATA "taffo.funinfo"
@@ -180,8 +180,7 @@ public:
   static llvm::Optional<llvm::StringRef> retrieveTargetMetadata(const llvm::GlobalObject &V);
 
 
-  /// Save infos about error computed in PRA
-  void savePRAErrorMetadata(llvm::Value *u, const taffo::GenericErrorInfo *mdinfo);
+
 
 protected:
   llvm::DenseMap<llvm::MDNode *, std::shared_ptr<TType> > TTypes;

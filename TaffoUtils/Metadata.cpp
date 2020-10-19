@@ -13,7 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Metadata.h"
-#include "../PrecisionAnalysis/TaffoPRA/ErrorInfo.hpp"
+//#include "../PrecisionAnalysis/TaffoPRA/ErrorInfo.hpp"
 
 #include <sstream>
 
@@ -599,29 +599,6 @@ createStructInfoFromMetadata(MDNode *MDN) {
 
   return std::unique_ptr<StructInfo>(new StructInfo(Fields));
 }
-
-
-    void MetadataManager::
-    savePRAErrorMetadata(llvm::Value *u, const taffo::GenericErrorInfo *einfo) {
-        StringRef mdid;
-
-        if (isa<taffo::ErrorInfo>(einfo)) {
-            mdid = PRA_ERROR_METADATA;
-        } else if (isa<taffo::StructuredErrorInfo>(einfo)) {
-            mdid = PRA_STRUCT_METADATA;
-        } else{
-            assert(false && "unknown PRA Error class");
-        }
-
-        if (Instruction *instr = dyn_cast<Instruction>(u)) {
-            instr->setMetadata(mdid, einfo->toMetadata(u->getContext()));
-        } else if (GlobalObject *go = dyn_cast<GlobalObject>(u)) {
-            go->setMetadata(mdid, einfo->toMetadata(u->getContext()));
-        } else {
-            assert(false && "parameter not an instruction or a global object");
-        }
-    }
-
 
 
 }
