@@ -1,1 +1,2 @@
 add_subdirectory(InstructionMix)
+add_subdirectory(TaffoUtils)

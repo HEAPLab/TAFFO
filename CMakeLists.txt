@@ -22,8 +22,6 @@ add_subdirectory(DataTypeAlloc)
 add_subdirectory(Conversion)
 add_subdirectory(ErrorAnalysis)
 
-add_subdirectory(TaffoUtils)
-
 add_llvm_library(Taffo MODULE
   $<TARGET_OBJECTS:obj.TaffoInitializer>
   $<TARGET_OBJECTS:obj.TaffoVRA>
