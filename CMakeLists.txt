@@ -16,28 +16,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # build & install all tools by default
 set(LLVM_BUILD_TOOLS ON)
 
-add_subdirectory(Initializer)
-add_subdirectory(RangeAnalysis)
-add_subdirectory(DataTypeAlloc)
-add_subdirectory(Conversion)
-add_subdirectory(ErrorAnalysis)
-
-add_llvm_library(Taffo MODULE
-  $<TARGET_OBJECTS:obj.TaffoInitializer>
-  $<TARGET_OBJECTS:obj.TaffoVRA>
-  $<TARGET_OBJECTS:obj.TaffoDTA>
-  $<TARGET_OBJECTS:obj.LLVMFloatToFixed>
-  $<TARGET_OBJECTS:obj.LLVMErrorPropagator>
-
-  LINK_LIBS
-  TaffoUtils
-  m
-  stdc++
-
-  PLUGIN_TOOL
-  opt
-)
-
 add_subdirectory(lib)
 add_subdirectory(utils)
 add_subdirectory(unittests)
