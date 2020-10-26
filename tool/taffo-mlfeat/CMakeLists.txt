@@ -1,3 +1,5 @@
+set(SELF taffo-mlfeat)
+
 set(LLVM_LINK_COMPONENTS
   AggressiveInstCombine
   Analysis
@@ -19,12 +21,12 @@ set(LLVM_LINK_COMPONENTS
   Passes
   )
 
-add_llvm_tool(taffo-mlfeat
+add_llvm_tool(${SELF}
   taffo-mlfeat.cpp
   TaffoMLFeaturesAnalysis.cpp
   TaffoMLFeaturesAnalysis.h
   )
-target_link_libraries(taffo-mlfeat PRIVATE
+target_link_libraries(${SELF} PUBLIC
   InstructionMix
   TaffoUtils
   )

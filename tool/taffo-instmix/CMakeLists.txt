@@ -1,3 +1,5 @@
+set(SELF taffo-instmix)
+
 set(LLVM_LINK_COMPONENTS
   AggressiveInstCombine
   Analysis
@@ -20,9 +22,9 @@ set(LLVM_LINK_COMPONENTS
   InstructionMix
   )
 
-add_llvm_tool(taffo-instmix
+add_llvm_tool(${SELF}
   taffo-instmix.cpp
   )
-target_link_libraries(taffo-instmix PRIVATE
+target_link_libraries(${SELF} PUBLIC
   InstructionMix
   )
