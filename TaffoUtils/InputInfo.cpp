@@ -96,21 +96,21 @@ namespace mdutils {
         return std::ldexp(1.0, -this->getPointPos());
     }
 
-    double FPType::getMinValueBound() const {
+    llvm::APFloat FPType::getMinValueBound() const {
         if (isSigned()) {
-            return std::ldexp(-1.0, getWidth() - getPointPos() - 1);
+            return llvm::APFloat(std::ldexp(-1.0, getWidth() - getPointPos() - 1));
         } else {
-            return 0.0;
+            return llvm::APFloat((double)0.0);
         }
     }
 
-    double FPType::getMaxValueBound() const {
+    llvm::APFloat FPType::getMaxValueBound() const {
         int MaxIntExp = (isSigned()) ? getWidth() - 1 : getWidth();
         double MaxIntPlus1 = std::ldexp(1.0, MaxIntExp);
         double MaxInt = MaxIntPlus1 - 1.0;
         if (MaxInt == MaxIntPlus1)
             MaxInt = std::nextafter(MaxInt, 0.0);
-        return std::ldexp(MaxInt, -getPointPos());
+        return llvm::APFloat(std::ldexp(MaxInt, -getPointPos()));
     }
 
     Metadata *createDoubleMetadata(LLVMContext &C, double Value) {
@@ -260,6 +260,8 @@ namespace mdutils {
                 return "Float_x86_fp80";
             case Float_ppc_fp128:    /*128-bit floating-point value (two 64-bits)*/
                 return "Float_ppc_fp128";
+            case Float_bfloat:    /*bfloat floating point value)*/
+                return "Float_bfloat";
         }
         llvm_unreachable("[TAFFO] Unknown FloatType standard!");
         return "[UNKNOWN TYPE]";
@@ -279,46 +281,50 @@ namespace mdutils {
                 return llvm::Type::TypeID::X86_FP80TyID;
             case Float_ppc_fp128:    /*128-bit floating-point value (two 64-bits)*/
                 return llvm::Type::TypeID::PPC_FP128TyID;
+            case Float_bfloat:    /*bfloat floating point value)*/
+                return llvm::Type::TypeID::BFloatTyID;
         }
         llvm_unreachable("[TAFFO] Unknown FloatType standard!");
     }
 
     //FIXME: some values are not computed correctly because we can not!
-    double FloatType::getMinValueBound() const {
+    llvm::APFloat FloatType::getMinValueBound() const {
         switch (this->getStandard()) {
             case Float_half: /*16-bit floating-point value*/
-                return -65504;
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEhalf(),true);
             case Float_float:    /*32-bit floating-point value*/
-                return std::numeric_limits<float>::min();
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEsingle(),true);
             case Float_double:    /*64-bit floating-point value*/
-                return std::numeric_limits<double>::min();
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEdouble(),true);
             case Float_fp128:    /*128-bit floating-point value (112-bit mantissa)*/
-                //Returning this will give us an incorrect number, as we return a double here...
-                llvm_unreachable("Unknown limit for this float type");
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEquad(),true);
             case Float_x86_fp80:    /*80-bit floating-point value (X87)*/
-                llvm_unreachable("Unknown limit for this float type");
+                return llvm::APFloat::getLargest(llvm::APFloat::x87DoubleExtended(),true);
             case Float_ppc_fp128:    /*128-bit floating-point value (two 64-bits)*/
-                llvm_unreachable("Unknown limit for this float type");
+                return llvm::APFloat::getLargest(llvm::APFloat::PPCDoubleDouble(),true);
+            case Float_bfloat:    /*bfloat floating point value)*/
+                return llvm::APFloat::getLargest(llvm::APFloat::BFloat(),true);            
         }
         llvm_unreachable("[TAFFO] Unknown FloatType standard!");
     }
 
     //FIXME: some values are not computed correctly because we can not!
-    double FloatType::getMaxValueBound() const {
+    llvm::APFloat FloatType::getMaxValueBound() const {
         switch (this->getStandard()) {
             case Float_half: /*16-bit floating-point value*/
-                return 65504;
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEhalf(),false);
             case Float_float:    /*32-bit floating-point value*/
-                return std::numeric_limits<float>::max();
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEsingle(),false);
             case Float_double:    /*64-bit floating-point value*/
-                return std::numeric_limits<double>::max();
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEdouble(),false);
             case Float_fp128:    /*128-bit floating-point value (112-bit mantissa)*/
-                //Returning this will give us an incorrect number, as we return a double here...
-                llvm_unreachable("Unknown limit for this float type");
+                return llvm::APFloat::getLargest(llvm::APFloat::IEEEquad(),false);
             case Float_x86_fp80:    /*80-bit floating-point value (X87)*/
-                llvm_unreachable("Unknown limit for this float type");
+                return llvm::APFloat::getLargest(llvm::APFloat::x87DoubleExtended(),false);
             case Float_ppc_fp128:    /*128-bit floating-point value (two 64-bits)*/
-                llvm_unreachable("Unknown limit for this float type");
+                return llvm::APFloat::getLargest(llvm::APFloat::PPCDoubleDouble(),false);
+            case Float_bfloat:    /*bfloat floating point value)*/
+                return llvm::APFloat::getLargest(llvm::APFloat::BFloat(),false);    
         }
 
         llvm_unreachable("Unknown limit for this float type");
@@ -349,23 +355,27 @@ namespace mdutils {
         int p;
         switch (this->getStandard()) {
             case Float_half: /*16-bit floating-point value*/
-                p = 10 + 1;
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::IEEEhalf());
                 break;
             case Float_float:    /*32-bit floating-point value*/
-                p = 23 + 1;
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::IEEEsingle());
                 break;
             case Float_double:    /*64-bit floating-point value*/
-                p = 52 + 1;
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::IEEEdouble());
                 break;
             case Float_fp128:    /*128-bit floating-point value (112-bit mantissa)*/
-                p = 112 + 1;
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::IEEEquad());
                 break;
             case Float_x86_fp80:    /*80-bit floating-point value (X87)*/
                 //But in this case, it has a fractionary part of 63 and an "integer" part of 1, total 64 for the significand
-                p = 63 + 1;
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::x87DoubleExtended());
                 break;
             case Float_ppc_fp128:    /*128-bit floating-point value (two 64-bits)*/
-                llvm_unreachable("Unknown p for this float format meh");
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::PPCDoubleDouble());
+                break;
+            case Float_bfloat:    /*128-bit floating-point value (two 64-bits)*/
+                p = llvm::APFloat::semanticsPrecision(llvm::APFloat::BFloat());
+                break;            
         }
 
         return p;

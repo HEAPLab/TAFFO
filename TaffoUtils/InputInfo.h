@@ -41,10 +41,10 @@ namespace mdutils {
         virtual double getRoundingError() const = 0;
 
         /// Safe approximation of the minimum value representable with this Type.
-        virtual double getMinValueBound() const = 0;
+        virtual llvm::APFloat getMinValueBound() const = 0;
 
         /// Safe approximation of the maximum value representable with this Type.
-        virtual double getMaxValueBound() const = 0;
+        virtual llvm::APFloat getMaxValueBound() const = 0;
 
         virtual llvm::MDNode *toMetadata(llvm::LLVMContext &C) const = 0;
 
@@ -83,9 +83,9 @@ namespace mdutils {
 
         double getRoundingError() const override;
 
-        double getMinValueBound() const override;
+        llvm::APFloat getMinValueBound() const override;
 
-        double getMaxValueBound() const override;
+        llvm::APFloat getMaxValueBound() const override;
 
         llvm::MDNode *toMetadata(llvm::LLVMContext &C) const override;
 
@@ -140,7 +140,8 @@ namespace mdutils {
             Float_double,    /*64-bit floating-point value*/
             Float_fp128,    /*128-bit floating-point value (112-bit mantissa)*/
             Float_x86_fp80,    /*80-bit floating-point value (X87)*/
-            Float_ppc_fp128    /*128-bit floating-point value (two 64-bits)*/};
+            Float_ppc_fp128,   /*128-bit floating-point value (two 64-bits)*/
+            Float_bfloat};
 
         static std::string getFloatStandardName(FloatStandard standard);
 
@@ -149,9 +150,9 @@ namespace mdutils {
 
         double getRoundingError() const override;
 
-        double getMinValueBound() const override;
+       llvm::APFloat getMinValueBound() const override;
 
-        double getMaxValueBound() const override;
+        llvm::APFloat getMaxValueBound() const override;
 
         int getP() const;
 

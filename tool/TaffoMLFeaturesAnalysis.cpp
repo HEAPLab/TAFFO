@@ -61,9 +61,9 @@ struct MLFeatureBlock {
 
 
 struct MLFeatureBlockComputationState {
-  int lastDist_mul = INT_MAX;
-  int lastDist_div = INT_MAX;
-  int lastDist_callBase = INT_MAX;
+  int lastDist_mul = std::numeric_limits<int>::max();
+  int lastDist_div = std::numeric_limits<int>::max();
+  int lastDist_callBase = std::numeric_limits<int>::max();
 };
 
 
@@ -185,7 +185,7 @@ void computeEnabledInstructions(Function *f, DominatorTree& dom)
       }
     }
     
-    for (DomTreeNode *nexti: dom[self.bb]->getChildren()) {
+    for (DomTreeNode *nexti: dom[self.bb]->children()) {
       if (nexti->getBlock() != self.bb) {
         queue.push_back({nexti->getBlock(), self.nestingLevel});
       }
