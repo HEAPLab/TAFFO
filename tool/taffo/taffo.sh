@@ -72,8 +72,10 @@ raw_opts="$@"
 input_files=()
 output_file="a"
 float_output_file=
+emit_source=
 optimization=
 opts=
+float_opts=
 init_flags=
 vra_flags=
 disable_vra=0
@@ -81,11 +83,14 @@ dta_flags=
 conversion_flags=
 enable_errorprop=0
 errorprop_flags=
+errorprop_out=
 dontlink=
 iscpp=$CLANG
 feedback=0
 pe_model_file=
 temporary_dir=$(mktemp -d)
+del_temporary_dir=1
+help=0
 for opt in $raw_opts; do
   case $parse_state in
     0)
@@ -133,6 +138,7 @@ for opt in $raw_opts; do
             vra_flags="$vra_flags -debug";
             errorprop_flags="$errorprop_flags -debug";
           fi
+          LOG=/dev/stderr
           ;;
         -debug-taffo)
           if [[ $llvm_debug -ne 0 ]]; then
@@ -142,6 +148,7 @@ for opt in $raw_opts; do
             vra_flags="$vra_flags --debug-only=taffo-vra";
             errorprop_flags="$errorprop_flags --debug-only=errorprop";
           fi
+          LOG=/dev/stderr
           ;;
         -disable-vra)
           disable_vra=1
@@ -154,6 +161,25 @@ for opt in $raw_opts; do
           ;;
         -pe-model)
           parse_state=7
+          ;;
+        -temp-dir)
+          del_temporary_dir=0
+          parse_state=9
+          ;;
+        -err-out)
+          enable_errorprop=1
+          parse_state=10
+          ;;
+        -S)
+          emit_source="s"
+          float_opts="-S"
+          ;;
+        -emit-llvm)
+          emit_source="ll"
+          float_opts="$float_opts -S -emit-llvm"
+          ;;
+        -help | -h | -version | -v | --help | --version)
+          help=1
           ;;
         -*)
           opts="$opts $opt";
@@ -202,11 +228,70 @@ for opt in $raw_opts; do
       errorprop_flags="$errorprop_flags $opt";
       parse_state=0;
       ;;
+    9)
+      temporary_dir="$opt";
+      parse_state=0;
+      ;;
+    10)
+      errorprop_out="$opt";
+      parse_state=0;
+      ;;
   esac;
 done
 
+if [[ ( -z "$input_files" ) || ( $help -ne 0 ) ]]; then
+  cat << HELP_END
+TAFFO: Tuning Assistant for Floating point and Fixed point Optimization
+Usage: taffo [options] file...
+
+The specified files can be any C or C++ source code files.
+Apart from the TAFFO-specific options listed below, all CLANG options are
+also accepted.
+
+Options:
+  -o <file>             Write compilation output to <file>
+  -O<level>             Set the optimization level to the specified value.
+                        The accepted optimization levels are the same as CLANG.
+                        (-O, -O1, -O2, -O3, -Os, -Of)
+  -c                    Do not link the output
+  -S                    Produce an assembly file in output instead of a binary
+                        (overrides -c and -emit-llvm)
+  -emit-llvm            Produce a LLVM-IR assembly file in output instead of
+                        a binary (overrides -c and -S)
+  -enable-err           Enable the error propagator (disabled by default)
+  -err-out <file>       Produce a textual report about the estimates performed
+                        by the Error Propagator in the specified file.
+  -feedback             Enable the feedback cycle using the Performance
+                        Estimator and the Error Propagator.
+  -pe-model <file>      Uses the specified file as the performance model for
+                        the Performance Estimator. Performance models can be
+                        produced using the taffo-pe-train-* tools.
+  -disable-vra          Disables the VRA analysis pass, and replaces it with
+                        a simpler, optimistic, and potentially incorrect greedy
+                        algorithm.
+  -float-output <file>  Also compile the files without using TAFFO and store
+                        the output to the specified location.
+  -Xinit <option>       Pass the specified option to the Initializer pass of
+                        TAFFO
+  -Xvra <option>        Pass the specified option to the VRA pass of TAFFO
+  -Xdta <option>        Pass the specified option to the DTA pass of TAFFO
+  -Xconversion <option> Pass the specified option to the Conversion pass of
+                        TAFFO
+  -Xerr <option>        Pass the specified option to the Error Propagator pass
+                        of TAFFO
+  -debug                Enable LLVM and TAFFO debug logging during the
+                        compilation.
+  -debug-taffo          Enable TAFFO-only debug logging during the compilation.
+  -temp-dir <dir>       Store various temporary files related to the execution
+                        of TAFFO to the specified directory.
+HELP_END
+  exit 0
+fi
+
 # enable bash logging
-set -x
+if [[ $LOG != /dev/null ]]; then
+  set -x
+fi
 
 ###
 ###  Produce base .ll
@@ -293,9 +378,12 @@ while [[ $feedback_stop -eq 0 ]]; do
   if [[ ( $enable_errorprop -eq 1 ) || ( $feedback -ne 0 ) ]]; then
     ${OPT} \
       -load "$TAFFOLIB" \
-      -errorprop -startonly \
+      -errorprop \
       ${errorprop_flags} \
       -S -o "${temporary_dir}/${output_file}.6.magiclangtmp.ll" "${temporary_dir}/${output_file}.5.magiclangtmp.ll" 2> "${temporary_dir}/${output_file}.errorprop.magiclangtmp.txt" || exit $?
+    if [[ ! ( -z "$errorprop_out" ) ]]; then
+      cp "${temporary_dir}/${output_file}.errorprop.magiclangtmp.txt" "$errorprop_out"
+    fi
   fi
   if [[ $feedback -eq 0 ]]; then
     break
@@ -320,23 +408,37 @@ done
 ###
 ###  Backend
 ###
-${CLANG} \
-  $opts ${optimization} \
-  -c \
-  "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
-  -S -o "${temporary_dir}/$output_file.magiclangtmp.s" || exit $?
-${iscpp} \
-  $opts ${optimization} \
-  ${dontlink} \
-  "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
-  -o "$output_file" || exit $?
+
+# Produce the requested output file
+if [[ ( $emit_source == "s" ) || ( $del_temporary_dir -eq 0 ) ]]; then
+  ${CLANG} \
+    $opts ${optimization} \
+    -c \
+    "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
+    -S -o "${temporary_dir}/$output_file.magiclangtmp.s" || exit $?
+fi
+if [[ $emit_source == "s" ]]; then
+  cp "${temporary_dir}/$output_file.magiclangtmp.s" "$output_file"
+elif [[ $emit_source == "ll" ]]; then
+  cp "${temporary_dir}/${output_file}.5.magiclangtmp.ll" "$output_file"
+else
+  ${iscpp} \
+    $opts ${optimization} \
+    ${dontlink} \
+    "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
+    -o "$output_file" || exit $?
+fi
+
 if [[ ! ( -z ${float_output_file} ) ]]; then
   ${build_float} \
-    ${dontlink} \
+    ${dontlink} ${float_opts} \
     -o "$float_output_file" || exit $?
 fi
 
 ###
 ###  Cleanup
 ###
-rm -rf "${temporary_dir}"
+if [[ $del_temporary_dir -ne 0 ]]; then
+  rm -rf "${temporary_dir}"
+fi
+
