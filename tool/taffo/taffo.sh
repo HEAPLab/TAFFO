@@ -302,14 +302,14 @@ if [[ ${#input_files[@]} -eq 1 ]]; then
     $opts -O0 -Xclang -disable-O0-optnone \
     -c -emit-llvm \
     ${input_files} \
-    -S -o "${temporary_dir}/${output_file}.1.magiclangtmp.ll" || exit $?
+    -S -o "${temporary_dir}/${output_file}.1.taffotmp.ll" || exit $?
 else
   # > 1 input files
   tmp=()
   for input_file in "${input_files[@]}"; do
     thisfn=$(basename "$input_file")
     thisfn=${thisfn%.*}
-    thisfn="${temporary_dir}/${output_file}.${thisfn}.0.magiclangtmp.ll"
+    thisfn="${temporary_dir}/${output_file}.${thisfn}.0.taffotmp.ll"
     tmp+=( $thisfn )
     ${CLANG} \
       $opts -O0 -Xclang -disable-O0-optnone \
@@ -319,11 +319,11 @@ else
   done
   ${LLVM_LINK} \
     ${tmp[@]} \
-    -S -o "${temporary_dir}/${output_file}.1.magiclangtmp.ll" || exit $?
+    -S -o "${temporary_dir}/${output_file}.1.taffotmp.ll" || exit $?
 fi
 
 # precompute clang invocation for compiling float version
-build_float="${iscpp} $opts ${optimization} ${temporary_dir}/${output_file}.1.magiclangtmp.ll"
+build_float="${iscpp} $opts ${optimization} ${temporary_dir}/${output_file}.1.taffotmp.ll"
 
 ###
 ###  TAFFO initialization
@@ -332,7 +332,7 @@ ${OPT} \
   -load "$TAFFOLIB" \
   -taffoinit \
   ${init_flags} \
-  -S -o "${temporary_dir}/${output_file}.2.magiclangtmp.ll" "${temporary_dir}/${output_file}.1.magiclangtmp.ll" || exit $?
+  -S -o "${temporary_dir}/${output_file}.2.taffotmp.ll" "${temporary_dir}/${output_file}.1.taffotmp.ll" || exit $?
   
 ###
 ###  TAFFO Value Range Analysis
@@ -342,16 +342,16 @@ if [[ $disable_vra -eq 0 ]]; then
     -load "$TAFFOLIB" \
     -mem2reg -taffoVRA \
     ${vra_flags} \
-    -S -o "${temporary_dir}/${output_file}.3.magiclangtmp.ll" "${temporary_dir}/${output_file}.2.magiclangtmp.ll" || exit $?;
+    -S -o "${temporary_dir}/${output_file}.3.taffotmp.ll" "${temporary_dir}/${output_file}.2.taffotmp.ll" || exit $?;
 else
-  cp "${temporary_dir}/${output_file}.2.magiclangtmp.ll" "${temporary_dir}/${output_file}.3.magiclangtmp.ll";
+  cp "${temporary_dir}/${output_file}.2.taffotmp.ll" "${temporary_dir}/${output_file}.3.taffotmp.ll";
 fi
 
 feedback_stop=0
 if [[ $feedback -ne 0 ]]; then
   # init the feedback estimator if needed
   base_dta_flags="${dta_flags}"
-  dta_flags="${base_dta_flags} "$($TAFFO_FE --init --state "${temporary_dir}/${output_file}.festate.magiclangtmp.bin")
+  dta_flags="${base_dta_flags} "$($TAFFO_FE --init --state "${temporary_dir}/${output_file}.festate.taffotmp.bin")
 fi
 while [[ $feedback_stop -eq 0 ]]; do
   ###
@@ -361,7 +361,7 @@ while [[ $feedback_stop -eq 0 ]]; do
     -load "$TAFFOLIB" \
     -taffodta -globaldce \
     ${dta_flags} \
-    -S -o "${temporary_dir}/${output_file}.4.magiclangtmp.ll" "${temporary_dir}/${output_file}.3.magiclangtmp.ll" || exit $?
+    -S -o "${temporary_dir}/${output_file}.4.taffotmp.ll" "${temporary_dir}/${output_file}.3.taffotmp.ll" || exit $?
     
   ###
   ###  TAFFO Conversion
@@ -370,7 +370,7 @@ while [[ $feedback_stop -eq 0 ]]; do
     -load "$TAFFOLIB" \
     -flttofix -globaldce -dce \
     ${conversion_flags} \
-    -S -o "${temporary_dir}/${output_file}.5.magiclangtmp.ll" "${temporary_dir}/${output_file}.4.magiclangtmp.ll" || exit $?
+    -S -o "${temporary_dir}/${output_file}.5.taffotmp.ll" "${temporary_dir}/${output_file}.4.taffotmp.ll" || exit $?
     
   ###
   ###  TAFFO Feedback Estimator
@@ -380,24 +380,24 @@ while [[ $feedback_stop -eq 0 ]]; do
       -load "$TAFFOLIB" \
       -errorprop \
       ${errorprop_flags} \
-      -S -o "${temporary_dir}/${output_file}.6.magiclangtmp.ll" "${temporary_dir}/${output_file}.5.magiclangtmp.ll" 2> "${temporary_dir}/${output_file}.errorprop.magiclangtmp.txt" || exit $?
+      -S -o "${temporary_dir}/${output_file}.6.taffotmp.ll" "${temporary_dir}/${output_file}.5.taffotmp.ll" 2> "${temporary_dir}/${output_file}.errorprop.taffotmp.txt" || exit $?
     if [[ ! ( -z "$errorprop_out" ) ]]; then
-      cp "${temporary_dir}/${output_file}.errorprop.magiclangtmp.txt" "$errorprop_out"
+      cp "${temporary_dir}/${output_file}.errorprop.taffotmp.txt" "$errorprop_out"
     fi
   fi
   if [[ $feedback -eq 0 ]]; then
     break
   fi
   ${build_float} -S -emit-llvm \
-    -o "${temporary_dir}/${output_file}.float.magiclangtmp.ll" || exit $?
+    -o "${temporary_dir}/${output_file}.float.taffotmp.ll" || exit $?
   ${TAFFO_PE} \
-    --fix "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
-    --flt "${temporary_dir}/${output_file}.float.magiclangtmp.ll" \
-    --model ${pe_model_file} > "${temporary_dir}/${output_file}.perfest.magiclangtmp.txt" || exit $?
+    --fix "${temporary_dir}/${output_file}.5.taffotmp.ll" \
+    --flt "${temporary_dir}/${output_file}.float.taffotmp.ll" \
+    --model ${pe_model_file} > "${temporary_dir}/${output_file}.perfest.taffotmp.txt" || exit $?
   newflgs=$(${TAFFO_FE} \
-    --pe-out "${temporary_dir}/${output_file}.perfest.magiclangtmp.txt" \
-    --ep-out "${temporary_dir}/${output_file}.errorprop.magiclangtmp.txt" \
-    --state "${temporary_dir}/${output_file}.festate.magiclangtmp.bin" || exit $?)
+    --pe-out "${temporary_dir}/${output_file}.perfest.taffotmp.txt" \
+    --ep-out "${temporary_dir}/${output_file}.errorprop.taffotmp.txt" \
+    --state "${temporary_dir}/${output_file}.festate.taffotmp.bin" || exit $?)
   if [[ ( "$newflgs" == 'STOP' ) || ( -z "$newflgs" ) ]]; then
     feedback_stop=1
   else
@@ -414,18 +414,18 @@ if [[ ( $emit_source == "s" ) || ( $del_temporary_dir -eq 0 ) ]]; then
   ${CLANG} \
     $opts ${optimization} \
     -c \
-    "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
-    -S -o "${temporary_dir}/$output_file.magiclangtmp.s" || exit $?
+    "${temporary_dir}/${output_file}.5.taffotmp.ll" \
+    -S -o "${temporary_dir}/$output_file.taffotmp.s" || exit $?
 fi
 if [[ $emit_source == "s" ]]; then
-  cp "${temporary_dir}/$output_file.magiclangtmp.s" "$output_file"
+  cp "${temporary_dir}/$output_file.taffotmp.s" "$output_file"
 elif [[ $emit_source == "ll" ]]; then
-  cp "${temporary_dir}/${output_file}.5.magiclangtmp.ll" "$output_file"
+  cp "${temporary_dir}/${output_file}.5.taffotmp.ll" "$output_file"
 else
   ${iscpp} \
     $opts ${optimization} \
     ${dontlink} \
-    "${temporary_dir}/${output_file}.5.magiclangtmp.ll" \
+    "${temporary_dir}/${output_file}.5.taffotmp.ll" \
     -o "$output_file" || exit $?
 fi
 
