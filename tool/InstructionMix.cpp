@@ -108,15 +108,15 @@ bool isSkippableInstruction(llvm::Instruction *instr)
   
   if (isDelimiterFunction(opnd))
     return true;
-  if (opnd->getIntrinsicID() == Intrinsic::ID::annotation ||
-      opnd->getIntrinsicID() == Intrinsic::ID::var_annotation ||
-      opnd->getIntrinsicID() == Intrinsic::ID::ptr_annotation ||
-      opnd->getIntrinsicID() == Intrinsic::ID::dbg_addr ||
-      opnd->getIntrinsicID() == Intrinsic::ID::dbg_label ||
-      opnd->getIntrinsicID() == Intrinsic::ID::dbg_value ||
-      opnd->getIntrinsicID() == Intrinsic::ID::dbg_declare ||
-      opnd->getIntrinsicID() == Intrinsic::ID::lifetime_end ||
-      opnd->getIntrinsicID() == Intrinsic::ID::lifetime_start)
+  if (opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::annotation ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::var_annotation ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::ptr_annotation ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::dbg_addr ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::dbg_label ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::dbg_value ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::dbg_declare ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::lifetime_end ||
+      opnd->getIntrinsicID() == Intrinsic::IndependentIntrinsics::lifetime_start)
     return true;
   return false;
 }

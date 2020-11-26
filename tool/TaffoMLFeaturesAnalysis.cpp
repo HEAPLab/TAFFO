@@ -240,7 +240,7 @@ bool TaffoMLFeatureAnalysisPass::runOnFunction(Function &F)
       features[i].contents.insert(bb);
     }
     features[i].entry = l->getHeader();
-    const SCEV *tripcnt = SE.getMaxBackedgeTakenCount(l);
+    const SCEV *tripcnt = SE.getConstantMaxBackedgeTakenCount(l);
     if (const SCEVConstant *realtripcnt = dyn_cast<SCEVConstant>(tripcnt)) {
       features[i].tripCount = realtripcnt->getAPInt().getZExtValue();
     } else {

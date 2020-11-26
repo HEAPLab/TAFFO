@@ -24,6 +24,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/raw_os_ostream.h"
+#include "llvm/InitializePasses.h"
 #include "TaffoMLFeaturesAnalysis.h"
 
 using namespace llvm;
