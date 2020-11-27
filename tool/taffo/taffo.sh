@@ -417,10 +417,10 @@ if [[ ( $emit_source == "s" ) || ( $del_temporary_dir -eq 0 ) ]]; then
     $opts ${optimization} \
     -c \
     "${temporary_dir}/${output_basename}.5.taffotmp.ll" \
-    -S -o "${temporary_dir}/$output_file.taffotmp.s" || exit $?
+    -S -o "${temporary_dir}/${output_basename}.taffotmp.s" || exit $?
 fi
 if [[ $emit_source == "s" ]]; then
-  cp "${temporary_dir}/$output_file.taffotmp.s" "$output_file"
+  cp "${temporary_dir}/${output_basename}.taffotmp.s" "$output_file"
 elif [[ $emit_source == "ll" ]]; then
   cp "${temporary_dir}/${output_basename}.5.taffotmp.ll" "$output_file"
 else
