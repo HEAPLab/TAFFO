@@ -31,11 +31,11 @@ class HandledFunction {
 public:
   /**Check if a function is handled
    * @param f the function to check*/
+  
   static bool isHandled(const llvm::Function *f) {
+    llvm::dbgs() << "EnableMathFunctionsConversionsFlag "   << EnableMathFunctionsConversionsFlag;
     llvm::StringRef old_fName = f->getName();
-    std::string fName(demangle(old_fName.str()));  
-    llvm::dbgs() << "Demangle " << fName << "\n";
-    
+    std::string fName(demangle(old_fName.str()));      
     auto handled = getHandledFunction();
     auto &list_of_handled = handled->handledFunction;
     // check if function name is present
@@ -44,7 +44,6 @@ public:
                      [&fName](const std::string &toComp) {
                        return fName.find(toComp) == 0;
                      }) != std::end(list_of_handled);
-    llvm::dbgs() << "Founded " << founded << "\n";
     return founded;
   }
 
