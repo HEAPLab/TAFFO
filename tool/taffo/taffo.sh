@@ -76,6 +76,7 @@ emit_source=
 optimization=
 opts=
 float_opts=
+plugin_opts=
 init_flags=
 vra_flags=
 disable_vra=0
@@ -95,6 +96,10 @@ for opt in $raw_opts; do
   case $parse_state in
     0)
       case $opt in
+        -Xplugin)
+          plugin_opts="$plugin_opts -Xclang -plugin-arg-taffo-plugin -Xclang";
+          parse_state=11;
+          ;;
         -Xinit)
           parse_state=2;
           ;;
@@ -236,6 +241,9 @@ for opt in $raw_opts; do
       errorprop_out="$opt";
       parse_state=0;
       ;;
+    11)
+      plugin_opts="$plugin_opts $opt";
+      parse_state=0;
   esac;
 done
 
@@ -275,6 +283,7 @@ Options:
                         the output to the specified location.
   -Xinit <option>       Pass the specified option to the Initializer pass of
                         TAFFO
+  -Xplugin <option>     Pass the specified option to the Clang plugin
   -Xvra <option>        Pass the specified option to the VRA pass of TAFFO
   -Xdta <option>        Pass the specified option to the DTA pass of TAFFO
   -Xconversion <option> Pass the specified option to the Conversion pass of
@@ -301,8 +310,8 @@ fi
 if [[ ${#input_files[@]} -eq 1 ]]; then
   # one input file
   ${CLANG} \
-    $opts -O0 -Xclang -disable-O0-optnone \
-    -c -emit-llvm \
+    $opts -O0 -Xclang -disable-O0-optnone  \
+    -c -Xclang -load -Xclang /usr/local/lib/TaffoPlugin.so -Xclang -add-plugin -Xclang taffo-plugin $plugin_opts -emit-llvm \
     ${input_files} \
     -S -o "${temporary_dir}/${output_basename}.1.taffotmp.ll" || exit $?
 else
@@ -315,7 +324,7 @@ else
     tmp+=( $thisfn )
     ${CLANG} \
       $opts -O0 -Xclang -disable-O0-optnone \
-      -c -emit-llvm \
+      -c -Xclang -load -Xclang /usr/local/lib/TaffoPlugin.so -Xclang -add-plugin -Xclang taffo-plugin -emit-llvm \
       ${input_file} \
       -S -o "${thisfn}" || exit $?
   done

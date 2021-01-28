@@ -44,7 +44,7 @@ $ make install
 
 ### Step 3
 
-Modify the application to insert annotations on the appropriate variable declarations, then use `taffo` to compile your application.
+Modify the application to insert pragmas with annotations on the appropriate variable declarations, then use `taffo` to compile your application.
 
 ```sh
 <editor> program.c
@@ -52,6 +52,6 @@ Modify the application to insert annotations on the appropriate variable declara
 taffo -O3 -o program-taffo program.c
 ```
 
-See the annotation syntax documentation or the examples in `test/simple-test-cases` to get an idea on how to write annotations. You can also test TAFFO without adding annotations, which will produce the same results as using `clang` as a compiler/linker instead of `taffo`.
+See the plugin user guide and the annotation syntax documentation or the examples in `test/simple-test-cases` to get an idea on how to write pragmas and annotations. You can also test TAFFO without adding annotations, which will produce the same results as using `clang` as a compiler/linker instead of `taffo`.
 
 Note that there is no `taffo++`; C++ source files are autodetected by the file extension instead.
