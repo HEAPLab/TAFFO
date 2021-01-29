@@ -281,9 +281,9 @@ Options:
                         algorithm.
   -float-output <file>  Also compile the files without using TAFFO and store
                         the output to the specified location.
+  -Xplugin <option>     Pass the specified option to the Clang plugin.                       
   -Xinit <option>       Pass the specified option to the Initializer pass of
                         TAFFO
-  -Xplugin <option>     Pass the specified option to the Clang plugin
   -Xvra <option>        Pass the specified option to the VRA pass of TAFFO
   -Xdta <option>        Pass the specified option to the DTA pass of TAFFO
   -Xconversion <option> Pass the specified option to the Conversion pass of
