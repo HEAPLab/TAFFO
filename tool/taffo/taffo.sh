@@ -84,6 +84,7 @@ conversion_flags=
 enable_errorprop=0
 errorprop_flags=
 errorprop_out=
+mem2reg=-mem2reg
 dontlink=
 iscpp=$CLANG
 feedback=0
@@ -169,6 +170,9 @@ for opt in $raw_opts; do
         -err-out)
           enable_errorprop=1
           parse_state=10
+          ;;
+        -no-mem2reg)
+          mem2reg=
           ;;
         -S)
           emit_source="s"
@@ -271,6 +275,7 @@ Options:
   -disable-vra          Disables the VRA analysis pass, and replaces it with
                         a simpler, optimistic, and potentially incorrect greedy
                         algorithm.
+  -no-mem2reg           Disable scheduling of the mem2reg pass.
   -float-output <file>  Also compile the files without using TAFFO and store
                         the output to the specified location.
   -Xinit <option>       Pass the specified option to the Initializer pass of
@@ -342,7 +347,7 @@ ${OPT} \
 if [[ $disable_vra -eq 0 ]]; then
   ${OPT} \
     -load "$TAFFOLIB" \
-    -mem2reg -taffoVRA \
+    ${mem2reg} -taffoVRA \
     ${vra_flags} \
     -S -o "${temporary_dir}/${output_basename}.3.taffotmp.ll" "${temporary_dir}/${output_basename}.2.taffotmp.ll" || exit $?;
 else
