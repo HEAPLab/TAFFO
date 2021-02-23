@@ -70,7 +70,10 @@ mdutils::FPType taffo::fixedPointTypeFromRange(
   }
   int fracBitsAmt = std::min(bitsAmt - intBit, maxFracBitsAmt);
   
-  while (fracBitsAmt < fracThreshold && bitsAmt < maxTotalBits) {
+  // compensate for always zero fractional bits for numbers < 0.5
+  int negIntBitsAmt = std::max(0, (int)std::ceil(-std::log2(max)));
+  
+  while ((fracBitsAmt - negIntBitsAmt) < fracThreshold && bitsAmt < maxTotalBits) {
     bitsAmt += totalBitsIncrement;
     fracBitsAmt = bitsAmt - intBit;
   }
