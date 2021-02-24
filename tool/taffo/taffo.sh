@@ -267,11 +267,6 @@ Options:
   -enable-err           Enable the error propagator (disabled by default)
   -err-out <file>       Produce a textual report about the estimates performed
                         by the Error Propagator in the specified file.
-  -feedback             Enable the feedback cycle using the Performance
-                        Estimator and the Error Propagator.
-  -pe-model <file>      Uses the specified file as the performance model for
-                        the Performance Estimator. Performance models can be
-                        produced using the taffo-pe-train-* tools.
   -disable-vra          Disables the VRA analysis pass, and replaces it with
                         a simpler, optimistic, and potentially incorrect greedy
                         algorithm.
