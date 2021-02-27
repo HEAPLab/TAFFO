@@ -128,11 +128,12 @@ The results obtained with the medium dataset on an 4 core Intel Core i5 4440 are
 
 MEDIUM_DATASETS have been used, since most benchmarks are currently failing (with pure Clang) using bigger datasets.
 
-A possible explanation for the lower-than-expected speed-ups is:
-- the benchmarks are based on an outdated Polybench version, that presents errors fixed in later versions.
-- a wrong implementation of the OpenMP directives, which is sometimes shown by the different results achieved with respect to the serial version.
+Possible explanation for the lower-than-expected speed-ups are:
+- the benchmarks used are based on an outdated version of Polybench with respect to the other one currently used in TAFFO.
+- the OpenMP directives in the adapted OpenMP-Polybench are not always correctly used, leading to far different results compared to the serial version.
+ In particular, the parallel benchmarks generate numbers with larger order-of-magnitude, requiring more precision in fixed-points and often reaching overflows.
 
-A few other OpenMP benchmarks with floating-points and that could be adapted are:
+A few other OpenMP benchmarks with floating-points that could be adapted are:
 - http://rodinia.cs.virginia.edu/doku.php
 - https://gitlab.pnnl.gov/perf-lab-hub/perfect/perfect-suite/-/tree/master/suite
 
