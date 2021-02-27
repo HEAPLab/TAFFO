@@ -59,7 +59,7 @@ entry:
 ```
 
 The ```main``` contains only library functions and variables allocation.
-The logic contained in the parallel region is outlined in an external function, the ```.omp_outlined.```.
+The logic contained in the parallel region is outlined in another function, the ```.omp_outlined.```.
 The function directly called is the ```__kmpc_fork_call```, whose source is not present in the LLVM IR.
 Additionally, the ```__kmpc_fork_call``` receives the following arguments:
 - Two parameters for internal OpenMP configurations.
@@ -93,7 +93,7 @@ TAFFO will regularly analyze the trampoline calls,  without any modification to 
 
 #### Conversion pass
 At the end of the Conversion pass, it is necessary to transform back the trampolines into their original calls. 
-TO do so, the original function is picked from the saved bitcast and placed in place of the trampoline call, which will be deleted. 
+To do so, the original function is picked from the saved bitcast and placed in place of the trampoline call, which will be deleted. 
 The original function will have the relevant arguments replaced accordingly, specifically the indirect function to be called and the shared variables needed. 
 
 In the above example, TAFFO will correctly convert the floating-point instructions in fixed-points, and
@@ -129,7 +129,7 @@ The results obtained with the medium dataset on an 4 core Intel Core i5 4440 are
 MEDIUM_DATASETS have been used, since most benchmarks are currently failing (with pure Clang) using bigger datasets.
 
 A possible explanation for the lower-than-expected speed-ups is:
-- the outdated benchmarks used, that present errors fixed in later versions.
+- the benchmarks are based on an outdated Polybench version, that presents errors fixed in later versions.
 - a wrong implementation of the OpenMP directives, which is sometimes shown by the different results achieved with respect to the serial version.
 
 A few other OpenMP benchmarks with floating-points and that could be adapted are:
