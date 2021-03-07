@@ -21,7 +21,6 @@ This allows TAFFO to convert the floating-point code scoped by the supported Ope
 
 Note that a thorough analysis of the effects of data-dependency in the parallel execution is out of the scope of the integration.
 
-
 No additional metadata is needed to integrate OpenMP code with TAFFO.
 
 ## Supported constructs
@@ -37,7 +36,7 @@ Note that shared variables are fully supported for the above constructs.
 
 ## Unsupported constructs
 Some constructs are not currently supported in TAFFO.
-Note that the compiler will be conservative and no breaking optimizations will be made.
+Note that the compiler will be conservative and no breaking optimizations will be applied.
 
 In particular, the usage of the following constructs stops the conversion of the shared OpenMP variables from 
 floating-points to fixed-points, both outside and inside the parallel code regions.

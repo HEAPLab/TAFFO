@@ -1,5 +1,5 @@
 # OpenMP Dev Guide
-This document describes the OpenMP integration from a technical point of view, describing the following:
+This document provides technical details related to the OpenMP integration. In particular, it describes:
 - An introduction to the OpenMP runtime library functions and how to patch them
 - The approach used and the modifications to the TAFFO passes
 - The possible next steps to enhance the current integration
@@ -7,9 +7,9 @@ This document describes the OpenMP integration from a technical point of view, d
 Check out [the OpenMP user guide](./OpenMPUserGuide.md) to learn how to use TAFFO with OpenMP.
 
 ## Patching OpenMP Runtime
-The OpenMP implementation of the LLVM Framework inserts various indirect functions to manage parallelism;
+The OpenMP implementation provided by the LLVM Framework inserts various indirect functions to manage parallelism;
 moreover, the functions are not contained in the source code that is being compiled.
-Therefore, TAFFO can't natively follow the flow of execution.
+Therefore, TAFFO cannot natively follow the flow of execution.
  
 The source below describes a simple OpenMP example program:
 ```c++
@@ -17,8 +17,8 @@ The source below describes a simple OpenMP example program:
 
 int main() {
   float container[16] __attribute((annotate("target('container') scalar()")));
-
-#pragma omp parallel for shared(container) // container is a shared variable between the OpenMP threads
+  // container is a shared variable between the OpenMP threads
+  #pragma omp parallel for shared(container)
   for (int i = 0; i < 16; i++) {
     // Do parallel computation
     float result = i*0.05;
@@ -142,7 +142,7 @@ Although the behaviour has not been fixed, a workaround is present to manage the
 To be conservative, TAFFO prevents the shared variables of parallel regions to be converted if they contain tasks. 
 
 This could have undesired behaviour in cases such as this one:
-```
+```c++
 int main() {
     float task_variable __attribute((annotate("target('task_variable') scalar()"))) = 1.0f;
     float not_task_variable __attribute((annotate("target('not_task_variable') scalar()"))) = 363;
