@@ -11,7 +11,7 @@ More technical details, such as the modifications in the `Initializer` and `Conv
 TAFFO has preliminary support for [OpenMP](https://www.openmp.org) parallel constructs.
 
 The goals of the integration are the following:
-- The usage of a simple workflow to easily patch the OpenMP runtime library functions (such as __`kmpc_fork_call`) 
+- The usage of a simple workflow to easily patch the OpenMP runtime library functions (such as `__kmpc_fork_call`) 
  during optimizations, requiring the least amount of work necessary for intermediate passes.
 - Basic support for the most common OpenMP directives, such as `omp parallel for`. 
 
@@ -25,7 +25,7 @@ Note that a thorough analysis of the effects of data-dependency in the parallel 
 No additional metadata is needed to integrate OpenMP code with TAFFO.
 
 ## Supported constructs
-The parallel constructs below are tested and TAFFO correctly converts floating-point logic in fixed-point.
+The parallel constructs below are tested and TAFFO correctly converts floating-point logic into fixed-point.
 Do not trust the VRA though, and use `final` when possible.
 
 - `omp parallel`
