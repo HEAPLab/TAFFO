@@ -33,7 +33,7 @@ int main() {
 
 A simplified `main` in the LLVM IR produced by TAFFO is as follows:
 
-```
+```llvm
 define dso_local i32 @main() #0 {
 entry:
   // Setup variables
