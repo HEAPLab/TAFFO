@@ -8,7 +8,7 @@ Check out [the OpenMP user guide](./OpenMPUserGuide.md) to learn how to use TAFF
 
 ## Patching OpenMP Runtime
 The OpenMP implementation provided by the LLVM Framework inserts various indirect functions to manage parallelism;
-moreover, the functions are not contained in the source code that is being compiled.
+moreover, these functions are OpenMP intrinsics, which are not defined in the LLVM-IR module that is being compiled.
 Therefore, TAFFO cannot natively follow the flow of execution.
  
 The source below describes a simple OpenMP example program:
