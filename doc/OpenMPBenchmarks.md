@@ -5,8 +5,8 @@ This document outlines the results of benchmarks concerning the OpenMP x TAFFO i
 To evaluate the integration's performance, a properly modified version of [Polybench 3.2 with OpenMP pragmas included](https://github.com/cavazos-lab/PolyBench-ACC/tree/master/OpenMP) is used. 
 Note that most benchmarks in the original repository have been modified, not only by adding annotations but by fixing syntactical and logical errors in the usage of OpenMP.
 
-Moreover, a not-negligible part of the benchmarks has not only syntactical but also logical errors, when compiling with plain clang. Therefore, they have been excluded and deleted.
-The deleted benchmarks, with the related motivation, are listed on the specific [benchmark README](https://github.com/HEAPLab/TAFFO-test/blob/openmp/polybench-c-openmp/README.md).
+Moreover, a not-negligible part of the benchmarks has not only syntactical but also logical errors, when compiling with plain clang. Therefore, they have been excluded.
+More information about the modifications and the disabled benchmarks can be found in the specific [benchmark README.md](https://github.com/HEAPLab/TAFFO-test/blob/openmp/polybench-c-openmp/README.md).
 
 ### Quantitative results
 System specifications:
