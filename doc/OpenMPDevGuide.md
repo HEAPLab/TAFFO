@@ -125,11 +125,6 @@ int main() {
 The executable compiled with TAFFO prints 4.000000 instead of the expected 20.000000. 
 The underlying problem is that the ScalarEvolution, used by the VRA to calculate the trip counts, fails to detect the range of the loop.
 
-A simple fix for similar situations are:
-- set manually a final range in the annotations: `scalar(range(0, 20) final)` is enough to "fix" the wrong range.
-- manually set the ScalarEvolution trip-count for the VRA.
-Note that, although the solution has been employed in the benchmarks, it's not scalable and greatly reduces the usefulness of the VRA.
-
 The problem could be tackled with additional simplification passes, but they do not seem effective and 
 risk creating additional problems for the TAFFO's passes.
 
