@@ -52,7 +52,8 @@ Note that only `jacobi-1d-imper` worked with `EXTRALARGE_DATASET`.
 Possible explanation for the lower-than-expected speed-ups are:
 - the benchmarks used are based on an outdated version of Polybench with respect to the other one currently used in TAFFO.
 - the OpenMP directives in the adapted OpenMP-Polybench are not always correctly used, leading to far different results compared to the serial version.
- In particular, the parallel benchmarks generate numbers with larger order-of-magnitude, requiring more precision in fixed-points and often reaching overflows.
+   In particular, the modified parallel version of Polybench generate numbers with larger order-of-magnitude with respect to the original Polybench suite, 
+   requiring more precision in fixed-points and often reaching overflows.
 
 ## Other benchmarks
 A few other OpenMP benchmarks with floating-points that could be adapted are:
