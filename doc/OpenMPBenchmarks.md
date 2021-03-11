@@ -35,7 +35,7 @@ The following times have been obtained as the median of 10 executions.
 | seidel-2d       | 7.85984582155418E-05 | 0.00019689           | 0.3680305  | 0.313082      | 0.850695798310194 |
 
 
-`STANDARD_DATASET` have been used, since most benchmarks are currently failing using bigger datasets, without applying TAFFO optimizations. 
+The benchmarks were executed with `STANDARD_DATASET`, since most benchmarks are currently failing using bigger datasets, without applying TAFFO optimizations. 
 
 In particular, `LARGE_DATASET` and `EXTRALARGE_DATASET` have been tested on the working benchmarks. 
 In both cases, every benchmark but the ones specified below failed with Segmentation Fault error. 
