@@ -35,7 +35,19 @@ The following times have been obtained as the median of 10 executions.
 | seidel-2d       | 7.85984582155418E-05 | 0.00019689           | 0.3680305  | 0.313082      | 0.850695798310194 |
 
 
-MEDIUM_DATASETS have been used, since most benchmarks are currently failing (with pure Clang) using bigger datasets.
+`STANDARD_DATASET` have been used, since most benchmarks are currently failing using bigger datasets, without applying TAFFO optimizations. 
+
+In particular, `LARGE_DATASET` and `EXTRALARGE_DATASET` have been tested on the working benchmarks. 
+In both cases, every benchmark but the ones specified below failed with Segmentation Fault error. 
+The following benchmarks did not fail with `LARGE_DATASET` and their speedup (computed using the same system specifications 
+and methodologies outlined above) is coherent with `STANDARD_DATASET`:
+- `covariance`
+- `syrk`
+- `jacobi-1d-imper`
+- `jacobi-2d-imper`
+- `seidel-2d`
+
+Note that only `jacobi-1d-imper` worked with `EXTRALARGE_DATASET`.
 
 Possible explanation for the lower-than-expected speed-ups are:
 - the benchmarks used are based on an outdated version of Polybench with respect to the other one currently used in TAFFO.
