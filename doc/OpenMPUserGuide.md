@@ -25,7 +25,13 @@ No additional metadata is needed to integrate OpenMP code with TAFFO.
 
 ## Supported constructs
 The parallel constructs below are tested and TAFFO correctly converts floating-point logic into fixed-point.
-Do not trust the VRA though, and use `final` when possible.
+
+Note that although the VRA can correctly analyse parallel code region, it will not be able to successfully deduct the range of the loop.
+The problem can be fixed by:
+- setting manually a final range in the annotations: `scalar(range(x, y) final)` is enough to set a correct range.
+ Check out additional details in in the [Annotation Syntax documentation](./AnnotationSyntax.md#data-attributes).
+- setting the trip-count for the VRA directly in the command line, with `-Xvra -unroll`. 
+ Check out additional details in the [Command Line Reference](./CommandLineReference.md#-unroll-count).
 
 - `omp parallel`
 - `omp for`
