@@ -1,17 +1,5 @@
-find_package(LLVM REQUIRED CONFIG)
-add_definitions(${LLVM_DEFINITIONS})
-include_directories(
-    ${LLVM_INCLUDE_DIRS}
-    ../TaffoUtils)
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(AddLLVM)
-
-llvm_map_components_to_libnames(llvm_libs
-  #
-  )
-
 # this function is mostly copied from AddLLVM.cmake because it assumes that the
-# entire LLVM source is available, even though in our case it might not 
+# entire LLVM source is available, even though in our case it might not
 function(taffo_add_unittest test_suite test_name)
   if( NOT TAFFO_BUILD_TESTS )
     set(EXCLUDE_FROM_ALL ON)
@@ -40,10 +28,7 @@ function(taffo_add_unittest test_suite test_name)
 
   set(LLVM_REQUIRES_RTTI OFF)
 
-  list(APPEND LLVM_LINK_COMPONENTS Support) # gtest needs it for raw_ostream
   add_executable(${test_name} ${ARGN})
-  set_property(TARGET ${test_name} PROPERTY CXX_STANDARD 11)
-  set_property(TARGET ${test_name} PROPERTY CXX_STANDARD_REQUIRED ON)
   if (NOT LLVM_ENABLE_RTTI)
     target_compile_options(${test_name} PRIVATE -fno-rtti)
   endif()
@@ -52,7 +37,7 @@ function(taffo_add_unittest test_suite test_name)
   # libpthreads overrides some standard library symbols, so main
   # executable must be linked with it in order to provide consistent
   # API for all shared libaries loaded by this executable.
-  target_link_libraries(${test_name} PRIVATE ${llvm_libs} taffo_gtest_main taffo_gtest ${LLVM_PTHREAD_LIB})
+  target_link_libraries(${test_name} PRIVATE ${LLVM_LIBRARIES} taffo_gtest_main taffo_gtest ${LLVM_PTHREAD_LIB})
 
   add_dependencies(${test_suite} ${test_name})
   get_target_property(test_suite_folder ${test_suite} FOLDER)
@@ -63,8 +48,9 @@ endfunction()
 
 function(add_taffo_unittest test_dirname)
   taffo_add_unittest(TAFFOUnitTests ${test_dirname} ${ARGN})
+  target_link_libraries(${test_dirname} PRIVATE TaffoUtils)
 endfunction()
 
 add_taffo_unittest(TAFFOUnitTests MultiValueMapTest.cpp)
-target_link_libraries(TAFFOUnitTests PRIVATE TaffoUtils TaffoUtils)
+
 
