@@ -81,6 +81,8 @@ private:
 
 
   HandledFunction() {
+    if(enabled(EnableMathFunctionSinFlag)) handledFunction.emplace_back("asin");
+    if(enabled(EnableMathFunctionSinFlag)) handledFunction.emplace_back("acos");
     if(enabled(EnableMathFunctionSinFlag)) handledFunction.emplace_back("sin");
     if(enabled(EnableMathFunctionCosFlag)) handledFunction.emplace_back("cos");
     if(enabled(EnableMathFunctionSinFlag)) handledFunction.emplace_back("_ZSt3sin");
