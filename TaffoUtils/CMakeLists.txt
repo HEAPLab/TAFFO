@@ -6,6 +6,8 @@ add_library(TaffoUtils
   TypeUtils.h
   TypeUtils.cpp
   MultiValueMap.h
+  LLVMVersions.h
+  LLVMVersions.cpp
 )
 
 set_property(TARGET TaffoUtils PROPERTY POSITION_INDEPENDENT_CODE ON)
