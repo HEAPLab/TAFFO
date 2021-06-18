@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.3) # like llvm
+cmake_minimum_required(VERSION 3.12) # for FindPython
 
 project(Taffo)
 
@@ -6,8 +6,7 @@ find_package(LLVM REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 cmake_policy(SET CMP0077 NEW)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include_directories(${LLVM_INCLUDE_DIRS}
-  TaffoUtils)
+include_directories(${LLVM_INCLUDE_DIRS})
 include(AddLLVM)
 include(HandleLLVMOptions)
 
@@ -18,30 +17,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_CLANG_TIDY "clang-tidy-10;")
 #add_compile_options(-Wall -Wextra)
 
-add_subdirectory(Initializer)
-add_subdirectory(RangeAnalysis)
-add_subdirectory(DataTypeAlloc)
-add_subdirectory(Conversion)
-add_subdirectory(ErrorAnalysis)
+# build & install all tools by default
+set(LLVM_BUILD_TOOLS ON)
 
-add_subdirectory(TaffoUtils)
+# fix add_llvm_tool on macOS+Xcode
+set(LLVM_MAIN_SRC_DIR ${CMAKE_SOURCE_DIR})
 
-add_llvm_library(Taffo MODULE
-  $<TARGET_OBJECTS:obj.TaffoInitializer>
-  $<TARGET_OBJECTS:obj.TaffoVRA>
-  $<TARGET_OBJECTS:obj.TaffoDTA>
-  $<TARGET_OBJECTS:obj.LLVMFloatToFixed>
-  $<TARGET_OBJECTS:obj.LLVMErrorPropagator>
-
-  LINK_LIBS
-  TaffoUtils
-  m
-  stdc++
-
-  PLUGIN_TOOL
-  opt
-)
-
+add_subdirectory(lib)
 add_subdirectory(utils)
 #add_subdirectory(unittests)
 add_subdirectory(tool)
