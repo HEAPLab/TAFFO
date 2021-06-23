@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -99,7 +100,7 @@ void computeBasicBlockStats(MLFeatureBlock& b, BasicBlock *bb, MLFeatureBlockCom
     
     if (AllocaInst *alloca = dyn_cast<AllocaInst>(&i)) {
       const DataLayout &dl = alloca->getModule()->getDataLayout();
-      Optional<uint64_t> size = alloca->getAllocationSizeInBits(dl);
+      Optional<llvm::TypeSize> size = alloca->getAllocationSizeInBits(dl);
       if (size.hasValue()) {
         b.maxAllocSize = std::max(b.maxAllocSize, (int)((*size) / 8));
       }
