@@ -26,6 +26,6 @@ set(LLVM_MAIN_SRC_DIR ${CMAKE_SOURCE_DIR})
 
 add_subdirectory(lib)
 add_subdirectory(utils)
-#add_subdirectory(unittests)
+add_subdirectory(unittests)
 add_subdirectory(tool)
 
