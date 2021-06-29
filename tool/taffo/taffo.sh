@@ -174,6 +174,15 @@ for opt in $raw_opts; do
         -no-mem2reg)
           mem2reg=
           ;;
+        -mixedmode)
+          dta_flags="$dta_flags -mixedmode=1"
+        ;;
+        -costmodelfilename*)
+          dta_flags="$dta_flags $opt"
+        ;;
+        -instructionsetfile*)
+          dta_flags="$dta_flags $opt"
+        ;;
         -S)
           emit_source="s"
           float_opts="-S"
