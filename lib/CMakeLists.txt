@@ -23,3 +23,6 @@ add_llvm_library(Taffo MODULE
   PLUGIN_TOOL
   opt
 )
+
+
+target_link_libraries(Taffo PRIVATE ortools)
