@@ -5,7 +5,6 @@ project(Taffo)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(LLVM REQUIRED CONFIG)
-
 # Protobuf is a dependency to ortools, but its cmake files might not have been
 # installed so we try to find it before ortool does in order to use the 
 # FindProtobuf.cmake we ship if necessary
