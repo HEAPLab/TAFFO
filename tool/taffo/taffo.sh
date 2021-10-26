@@ -177,6 +177,9 @@ for opt in $raw_opts; do
         -mixedmode)
           dta_flags="$dta_flags -mixedmode=1"
         ;;
+        -costmodel)
+          parse_state=11
+          ;;
         -costmodelfilename*)
           dta_flags="$dta_flags $opt"
         ;;
@@ -249,6 +252,16 @@ for opt in $raw_opts; do
       errorprop_out="$opt";
       parse_state=0;
       ;;
+    11)
+      f="$TAFFO_PREFIX"/share/ILP/cost/"$opt".csv
+      if [[ -e "$f" ]]; then
+        dta_flags="$dta_flags -costmodelfilename=$f"
+      else
+        printf 'error: specified cost model "%s" does not exist\n' "$opt"
+        exit 1
+      fi
+      parse_state=0
+      ;;
   esac;
 done
 
@@ -273,6 +286,11 @@ Options:
                         (overrides -c and -emit-llvm)
   -emit-llvm            Produce a LLVM-IR assembly file in output instead of
                         a binary (overrides -c and -S)
+  -mixedmode            Enables experimental data-driven type allocator
+    -costmodel <name>          Loads one of the builtin cost models
+    -costmodelfilename=<file>  Loads the given the cost model file
+                               (produced by taffo-costmodel)
+    -instructionsetfile=<file> Loads the given instruction whitelist file
   -enable-err           Enable the error propagator (disabled by default)
   -err-out <file>       Produce a textual report about the estimates performed
                         by the Error Propagator in the specified file.
@@ -295,7 +313,13 @@ Options:
   -debug-taffo          Enable TAFFO-only debug logging during the compilation.
   -temp-dir <dir>       Store various temporary files related to the execution
                         of TAFFO to the specified directory.
+
+Available builtin cost models:
 HELP_END
+  for f in "$TAFFO_PREFIX"/share/ILP/cost/*.csv; do
+    fn=$(basename "$f")
+    printf '  %s\n' ${fn%%.csv}
+  done
   exit 0
 fi
 
