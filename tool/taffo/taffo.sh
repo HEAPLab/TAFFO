@@ -80,6 +80,7 @@ init_flags=
 vra_flags=
 disable_vra=0
 dta_flags=
+dta_inst_set=
 conversion_flags=
 enable_errorprop=0
 errorprop_flags=
@@ -176,16 +177,19 @@ for opt in $raw_opts; do
           ;;
         -mixedmode)
           dta_flags="$dta_flags -mixedmode=1"
-        ;;
+          if [[ -z "$dta_inst_set" ]]; then
+            dta_inst_set="-instructionsetfile=$TAFFO_PREFIX/share/ILP/constrain/fix"
+          fi
+          ;;
         -costmodel)
           parse_state=11
           ;;
         -costmodelfilename*)
           dta_flags="$dta_flags $opt"
-        ;;
+          ;;
         -instructionsetfile*)
-          dta_flags="$dta_flags $opt"
-        ;;
+          dta_inst_set="$opt"
+          ;;
         -S)
           emit_source="s"
           float_opts="-S"
@@ -395,7 +399,7 @@ while [[ $feedback_stop -eq 0 ]]; do
   ${OPT} \
     -load "$TAFFOLIB" \
     -taffodta -globaldce \
-    ${dta_flags} \
+    ${dta_flags} ${dta_inst_set} \
     -S -o "${temporary_dir}/${output_basename}.4.taffotmp.ll" "${temporary_dir}/${output_basename}.3.taffotmp.ll" || exit $?
     
   ###
