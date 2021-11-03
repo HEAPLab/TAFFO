@@ -10,6 +10,7 @@ add_library(${SELF}
   MultiValueMap.h
   LLVMVersions.cpp
   LLVMVersions.h
+  DebugUtils.h
 )
 target_include_directories(${SELF} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(TARGET ${SELF} PROPERTY POSITION_INDEPENDENT_CODE ON)
