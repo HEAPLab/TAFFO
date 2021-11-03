@@ -1,29 +1,25 @@
 [submodule "Initializer"]
 	path = lib/Initializer
 	url = git@github.com:HEAPLab/TAFFO-submodule-init.git
+	branch = develop_2
 [submodule "Conversion"]
 	path = lib/Conversion
 	url = git@github.com:HEAPLab/TAFFO-submodule-conv.git
+	branch = develop_2
 [submodule "ErrorAnalysis"]
 	path = lib/ErrorAnalysis
 	url = git@github.com:HEAPLab/TAFFO-submodule-fe.git
+	branch = develop_2
 [submodule "Autotuner"]
 	path = lib/DataTypeAlloc
 	url = git@github.com:HEAPLab/TAFFO-submodule-dta.git
+	branch = develop_2
 [submodule "RangeAnalysis"]
 	path = lib/RangeAnalysis
 	url = git@github.com:HEAPLab/TAFFO-submodule-vra.git
+	branch = develop_2
 [submodule "test"]
 	path = test
 	url = git@github.com:HEAPLab/TAFFO-test.git
-	branch = origin/develop_2
-[submodule "lib/Conversion"]
-	branch = origin/develop_2
-[submodule "lib/DataTypeAlloc"]
-	branch = origin/develop_2
-[submodule "lib/ErrorAnalysis"]
-	branch = origin/develop_2
-[submodule "lib/Initializer"]
-	branch = origin/develop_2
-[submodule "lib/RangeAnalysis"]
-	branch = origin/develop_2
+	branch = develop_2
+
