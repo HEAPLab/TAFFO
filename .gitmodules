@@ -16,3 +16,14 @@
 [submodule "test"]
 	path = test
 	url = git@github.com:HEAPLab/TAFFO-test.git
+	branch = origin/develop_2
+[submodule "lib/Conversion"]
+	branch = origin/develop_2
+[submodule "lib/DataTypeAlloc"]
+	branch = origin/develop_2
+[submodule "lib/ErrorAnalysis"]
+	branch = origin/develop_2
+[submodule "lib/Initializer"]
+	branch = origin/develop_2
+[submodule "lib/RangeAnalysis"]
+	branch = origin/develop_2
