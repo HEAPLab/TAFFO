@@ -113,6 +113,9 @@ for opt in $raw_opts; do
           enable_errorprop=1
           parse_state=8;
           ;;
+        -Xfloat)
+          parse_state=12;
+          ;;
         -o*)
           if [[ ${#opt} -eq 2 ]]; then
             parse_state=1;
@@ -192,11 +195,9 @@ for opt in $raw_opts; do
           ;;
         -S)
           emit_source="s"
-          float_opts="-S"
           ;;
         -emit-llvm)
           emit_source="ll"
-          float_opts="$float_opts -S -emit-llvm"
           ;;
         -print-clang)
           printf '%s\n' "$CLANG"
@@ -269,6 +270,10 @@ for opt in $raw_opts; do
         exit 1
       fi
       parse_state=0
+      ;;
+    12)
+      float_opts="$float_opts $opt";
+      parse_state=0;
       ;;
   esac;
 done
@@ -366,7 +371,7 @@ else
 fi
 
 # precompute clang invocation for compiling float version
-build_float="${iscpp} $opts ${optimization} ${temporary_dir}/${output_basename}.1.taffotmp.ll"
+build_float="${iscpp} $opts ${optimization} ${float_opts} ${temporary_dir}/${output_basename}.1.taffotmp.ll"
 
 ###
 ###  TAFFO initialization
@@ -473,8 +478,16 @@ else
 fi
 
 if [[ ! ( -z ${float_output_file} ) ]]; then
+  if [[ $emit_source == 's' ]]; then
+    type_opts='-S'
+  elif [[ $emit_source == 'll' ]]; then
+    type_opts='-S -emit-llvm'
+  fi
   ${build_float} \
-    ${dontlink} ${float_opts} \
+    ${dontlink} -S \
+    -o "${temporary_dir}/${output_basename}.float.taffotmp.s" || exit $?
+  ${build_float} \
+    ${dontlink} ${type_opts} \
     -o "$float_output_file" || exit $?
 fi
 
