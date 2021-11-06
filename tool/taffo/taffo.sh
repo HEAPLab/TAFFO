@@ -198,6 +198,10 @@ for opt in $raw_opts; do
           emit_source="ll"
           float_opts="$float_opts -S -emit-llvm"
           ;;
+        -print-clang)
+          printf '%s\n' "$CLANG"
+          exit 0
+          ;;
         -help | -h | -version | -v | --help | --version)
           help=1
           ;;
