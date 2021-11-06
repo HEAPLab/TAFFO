@@ -347,7 +347,7 @@ fi
 if [[ ${#input_files[@]} -eq 1 ]]; then
   # one input file
   ${CLANG} \
-    $opts -O0 -Xclang -disable-O0-optnone \
+    $opts -D__TAFFO__ -O0 -Xclang -disable-O0-optnone \
     -c -emit-llvm \
     ${input_files} \
     -S -o "${temporary_dir}/${output_basename}.1.taffotmp.ll" || exit $?
@@ -360,7 +360,7 @@ else
     thisfn="${temporary_dir}/${output_basename}.${thisfn}.0.taffotmp.ll"
     tmp+=( $thisfn )
     ${CLANG} \
-      $opts -O0 -Xclang -disable-O0-optnone \
+      $opts -D__TAFFO__ -O0 -Xclang -disable-O0-optnone \
       -c -emit-llvm \
       ${input_file} \
       -S -o "${thisfn}" || exit $?
