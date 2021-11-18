@@ -14,6 +14,7 @@ function(taffo_add_unittest test_suite test_name)
 
   include_directories(../utils/unittest/googletest/include)
   include_directories(../utils/unittest/googlemock/include)
+  include(CTest)
   if (NOT LLVM_ENABLE_THREADS)
     list(APPEND LLVM_COMPILE_DEFINITIONS GTEST_HAS_PTHREAD=0)
   endif ()
@@ -39,6 +40,10 @@ function(taffo_add_unittest test_suite test_name)
   # API for all shared libaries loaded by this executable.
   target_link_libraries(${test_name} PRIVATE ${LLVM_LIBRARIES} taffo_gtest_main taffo_gtest ${LLVM_PTHREAD_LIB})
 
+  # Add gtest to be able to run ctest
+  add_test(NAME ${test_name}
+          COMMAND ${EXECUTABLE_OUTPUT_PATH}/${test_name})
+
   add_dependencies(${test_suite} ${test_name})
   get_target_property(test_suite_folder ${test_suite} FOLDER)
   if (NOT ${test_suite_folder} STREQUAL "NOTFOUND")
@@ -51,6 +56,6 @@ function(add_taffo_unittest test_dirname)
   target_link_libraries(${test_dirname} PRIVATE TaffoUtils)
 endfunction()
 
-add_taffo_unittest(TAFFOUnitTests MultiValueMapTest.cpp)
+add_taffo_unittest(TAFFOUnitTests SanityCheckTest.cpp MultiValueMapTest.cpp)
 
 
