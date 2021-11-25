@@ -23,7 +23,7 @@ include(HandleLLVMOptions)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_CLANG_TIDY "clang-tidy-10;")
-#add_compile_options(-Wall -Wextra)
+add_compile_options(-Wall -Wextra)
 
 # build & install all tools by default
 set(LLVM_BUILD_TOOLS ON)
@@ -32,6 +32,8 @@ set(LLVM_BUILD_TOOLS ON)
 set(LLVM_MAIN_SRC_DIR ${CMAKE_SOURCE_DIR})
 
 enable_testing()
+
+include_directories(lib)
 
 add_subdirectory(lib)
 add_subdirectory(utils)
